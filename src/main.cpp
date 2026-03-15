@@ -1,3 +1,6 @@
+#include "core/Grid.hpp"
+#include "ui/GridRenderer.hpp"
+
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -14,7 +17,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(1280, 800, "PathSim", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1920, 1080, "PathSim", nullptr, nullptr);
     if (window == nullptr) {
         glfwTerminate();
         return EXIT_FAILURE;
@@ -29,6 +32,13 @@ int main() {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
+    pathsim::Grid grid(30, 20);
+    pathsim::GridRenderer renderer;
+
+    grid.set_wall({.x = 5, .y = 5}, true);
+    grid.set_wall({.x = 5, .y = 6}, true);
+    grid.set_wall({.x = 5, .y = 7}, true);
+
     while (glfwWindowShouldClose(window) == 0) {
         glfwPollEvents();
 
@@ -36,9 +46,12 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::ShowDemoWindow();
+        // make sure draw call is in the correct spot,
+        // needs to be called between newframe() and render()
+        renderer.draw(grid);
 
         ImGui::Render();
+
         int w{};
         int h{};
         glfwGetFramebufferSize(window, &w, &h);

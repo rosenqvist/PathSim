@@ -10,27 +10,29 @@ void GridRenderer::draw(const Grid& grid) {
     ImGui::SetNextWindowSize(viewport->WorkSize);
 
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
+                             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+                             ImGuiWindowFlags_NoBringToFrontOnFocus;
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0F, 0.0F));
     ImGui::Begin("Grid", nullptr, flags);
     ImGui::PopStyleVar();
 
-    ImVec2 canvas_pos = ImGui::GetCursorScreenPos();
     ImVec2 available = ImGui::GetContentRegionAvail();
-    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    grid_origin_ = ImGui::GetCursorScreenPos();
+    is_hovered_ = ImGui::IsWindowHovered();
+    cell_w_ = available.x / static_cast<float>(grid.width());
+    cell_h_ = available.y / static_cast<float>(grid.height());
 
-    float cell_w = available.x / static_cast<float>(grid.width());
-    float cell_h = available.y / static_cast<float>(grid.height());
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
     for (int row = 0; row < grid.height(); ++row) {
         for (int col = 0; col < grid.width(); ++col) {
             Vec2i cell{.x = col, .y = row};
 
-            float x_min = canvas_pos.x + (static_cast<float>(col) * cell_w);
-            float y_min = canvas_pos.y + (static_cast<float>(row) * cell_h);
-            float x_max = x_min + cell_w;
-            float y_max = y_min + cell_h;
+            float x_min = grid_origin_.x + (static_cast<float>(col) * cell_w_);
+            float y_min = grid_origin_.y + (static_cast<float>(row) * cell_h_);
+            float x_max = x_min + cell_w_;
+            float y_max = y_min + cell_h_;
 
             ImVec2 top_left{x_min, y_min};
             ImVec2 bottom_right{x_max, y_max};
@@ -41,8 +43,49 @@ void GridRenderer::draw(const Grid& grid) {
     }
 
     ImGui::Dummy(available);
-
     ImGui::End();
+}
+
+void GridRenderer::handle_input(Grid& grid) {
+    // Implementation for handling input
+    if (!is_hovered_ || cell_w_ <= 0.0F || cell_h_ <= 0.0F) {
+        return;
+    }
+
+    ImVec2 mouse_pos = ImGui::GetMousePos();
+    int x = static_cast<int>((mouse_pos.x - grid_origin_.x) / cell_w_);
+    int y = static_cast<int>((mouse_pos.y - grid_origin_.y) / cell_h_);
+
+    Vec2i pos{.x = x, .y = y};
+
+    if (!grid.is_valid(pos)) {
+        return;
+    }
+
+    if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+        switch (active_tool_) {
+        case EditTool::Wall:
+            grid.set_wall(pos, true);
+            break;
+        case EditTool::Start:
+            grid.set_start(pos);
+            break;
+        case EditTool::End:
+            grid.set_end(pos);
+            break;
+        case EditTool::Erase:
+            grid.set_wall(pos, false);
+            break;
+        }
+    }
+}
+
+void GridRenderer::set_tool(EditTool tool) {
+    active_tool_ = tool;
+}
+
+EditTool GridRenderer::active_tool() const {
+    return active_tool_;
 }
 
 ImU32 GridRenderer::cell_color(CellState state) {

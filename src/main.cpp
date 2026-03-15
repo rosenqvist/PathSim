@@ -35,10 +35,6 @@ int main() {
     pathsim::Grid grid(30, 20);
     pathsim::GridRenderer renderer;
 
-    grid.set_wall({.x = 5, .y = 5}, true);
-    grid.set_wall({.x = 5, .y = 6}, true);
-    grid.set_wall({.x = 5, .y = 7}, true);
-
     while (glfwWindowShouldClose(window) == 0) {
         glfwPollEvents();
 
@@ -46,9 +42,37 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // make sure draw call is in the correct spot,
-        // needs to be called between newframe() and render()
         renderer.draw(grid);
+        renderer.handle_input(grid);
+
+        // toolbar (drawn after grid so it appears on top)
+        ImGui::Begin("Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+        auto tool = renderer.active_tool();
+        if (ImGui::RadioButton("Wall", tool == pathsim::EditTool::Wall)) {
+            renderer.set_tool(pathsim::EditTool::Wall);
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Start", tool == pathsim::EditTool::Start)) {
+            renderer.set_tool(pathsim::EditTool::Start);
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("End", tool == pathsim::EditTool::End)) {
+            renderer.set_tool(pathsim::EditTool::End);
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Erase", tool == pathsim::EditTool::Erase)) {
+            renderer.set_tool(pathsim::EditTool::Erase);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Clear")) {
+            grid.clear();
+        }
+
+        ImGui::End();
+
+        renderer.draw(grid);
+        renderer.handle_input(grid);
 
         ImGui::Render();
 

@@ -8,6 +8,10 @@
 
 #include <cstdlib>
 
+namespace menu_bar {
+void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer);
+} // namespace menu_bar
+
 int main() {
     if (glfwInit() == 0) {
         return EXIT_FAILURE;
@@ -44,35 +48,7 @@ int main() {
 
         renderer.draw(grid);
         renderer.handle_input(grid);
-
-        // toolbar (drawn after grid so it appears on top)
-        ImGui::Begin("Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
-        auto tool = renderer.active_tool();
-        if (ImGui::RadioButton("Wall", tool == pathsim::EditTool::Wall)) {
-            renderer.set_tool(pathsim::EditTool::Wall);
-        }
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Start", tool == pathsim::EditTool::Start)) {
-            renderer.set_tool(pathsim::EditTool::Start);
-        }
-        ImGui::SameLine();
-        if (ImGui::RadioButton("End", tool == pathsim::EditTool::End)) {
-            renderer.set_tool(pathsim::EditTool::End);
-        }
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Erase", tool == pathsim::EditTool::Erase)) {
-            renderer.set_tool(pathsim::EditTool::Erase);
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Clear")) {
-            grid.clear();
-        }
-
-        ImGui::End();
-
-        renderer.draw(grid);
-        renderer.handle_input(grid);
+        menu_bar::draw(grid, renderer);
 
         ImGui::Render();
 
@@ -95,3 +71,39 @@ int main() {
 
     return EXIT_SUCCESS;
 }
+
+namespace menu_bar {
+
+void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer) {
+    if (!ImGui::BeginMainMenuBar()) {
+        return;
+    }
+
+    if (ImGui::BeginMenu("Menu")) {
+        if (ImGui::MenuItem("Clear Grid")) {
+            grid.clear();
+        }
+        ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Tools")) {
+        auto tool = renderer.active_tool();
+        if (ImGui::MenuItem("Wall", nullptr, tool == pathsim::EditTool::Wall)) {
+            renderer.set_tool(pathsim::EditTool::Wall);
+        }
+        if (ImGui::MenuItem("Start", nullptr, tool == pathsim::EditTool::Start)) {
+            renderer.set_tool(pathsim::EditTool::Start);
+        }
+        if (ImGui::MenuItem("End", nullptr, tool == pathsim::EditTool::End)) {
+            renderer.set_tool(pathsim::EditTool::End);
+        }
+        if (ImGui::MenuItem("Erase", nullptr, tool == pathsim::EditTool::Erase)) {
+            renderer.set_tool(pathsim::EditTool::Erase);
+        }
+        ImGui::EndMenu();
+    }
+
+    ImGui::EndMainMenuBar();
+}
+
+} // namespace menu_bar

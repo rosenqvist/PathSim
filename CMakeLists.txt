@@ -36,7 +36,6 @@ add_library(pathsim_core STATIC
 target_compile_options(pathsim_core PRIVATE
     -Wall -Wextra -Wpedantic -Werror -Wno-unused-function
     $<$<CONFIG:Release>:-O3>
-    $<$<CONFIG:Release>:-flto>
 )
 
 target_include_directories(pathsim_core

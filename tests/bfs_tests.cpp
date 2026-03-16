@@ -1,5 +1,6 @@
 #include "../src/algo/BFS.hpp"
 #include "../src/core/Grid.hpp"
+#include "algo/Dijkstra.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -65,15 +66,16 @@ TEST_CASE("BFS records visited nodes", "[bfs]") {
     REQUIRE_FALSE(result.steps.empty());
 }
 
+// todo: improve this test case even further
+// should prove that bfs does go through expensive cells
+// should show consequences of ignoring weighted cells
 TEST_CASE("BFS ignores weights and finds fewest hops", "[bfs]") {
     pathsim::Grid grid(10, 3);
 
-    // Top row: all weight 1 (cheap but longer)
-    // Middle row: weight 9 (expensive but direct)
-    // Start at (0,1), end at (9,1) — direct path crosses weight 9
     grid.set_start({.x = 0, .y = 1});
     grid.set_end({.x = 9, .y = 1});
 
+    // Middle row is expensive
     for (int col = 1; col < 9; ++col) {
         grid.set_weight({.x = col, .y = 1}, 9);
     }
@@ -81,6 +83,20 @@ TEST_CASE("BFS ignores weights and finds fewest hops", "[bfs]") {
     pathsim::PathResult result = pathsim::bfs(grid);
 
     REQUIRE_FALSE(result.path.empty());
-    // BFS takes the direct route: 9 hops
+
+    // BFS takes the direct 9-hop route through expensive cells
     REQUIRE(result.path.size() == 10);
+
+    // Verify BFS actually traversed the expensive middle row
+    for (int col = 1; col < 9; ++col) {
+        pathsim::Vec2i expected{.x = col, .y = 1};
+        REQUIRE(std::ranges::find(result.path, expected) != result.path.end());
+    }
+
+    // BFS path costs more than the optimal weighted path
+    pathsim::PathResult dijkstra_result = pathsim::dijkstra(grid);
+    REQUIRE(result.path_cost > dijkstra_result.path_cost);
+
+    // But BFS used fewer or equal hops
+    REQUIRE(result.path.size() <= dijkstra_result.path.size());
 }

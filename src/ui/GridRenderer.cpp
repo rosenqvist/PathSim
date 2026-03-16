@@ -43,6 +43,21 @@ void GridRenderer::draw(const Grid& grid) {
         }
     }
 
+    // Hover highlight
+    if (is_hovered_) {
+        ImVec2 mouse_pos = ImGui::GetMousePos();
+        int hx = static_cast<int>((mouse_pos.x - grid_origin_.x) / cell_w_);
+        int hy = static_cast<int>((mouse_pos.y - grid_origin_.y) / cell_h_);
+        Vec2i hover_cell{.x = hx, .y = hy};
+
+        if (grid.is_valid(hover_cell)) {
+            float x_min = grid_origin_.x + (static_cast<float>(hx) * cell_w_);
+            float y_min = grid_origin_.y + (static_cast<float>(hy) * cell_h_);
+            draw_list->AddRect(ImVec2{x_min, y_min}, ImVec2{x_min + cell_w_, y_min + cell_h_},
+                               IM_COL32(255, 255, 255, 120), 0.0F, 0, 2.0F);
+        }
+    }
+
     ImGui::Dummy(available);
     ImGui::End();
 }

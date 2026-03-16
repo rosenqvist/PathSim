@@ -53,32 +53,61 @@ void GridRenderer::handle_input(Grid& grid) {
         return;
     }
 
-    ImVec2 mouse_pos = ImGui::GetMousePos();
-    int x = static_cast<int>((mouse_pos.x - grid_origin_.x) / cell_w_);
-    int y = static_cast<int>((mouse_pos.y - grid_origin_.y) / cell_h_);
+    Vec2i mouse_pos = screen_to_grid(ImGui::GetMousePos());
 
-    Vec2i pos{.x = x, .y = y};
-
-    if (!grid.is_valid(pos)) {
+    if (!grid.is_valid(mouse_pos)) {
         return;
+    }
+
+    // Begin drag if mouse just clicked on start or end
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        if (mouse_pos == grid.start()) {
+            drag_target_ = DragTarget::Start;
+        } else if (mouse_pos == grid.end()) {
+            drag_target_ = DragTarget::End;
+        }
+    }
+
+    // Handle ongoing drag
+    if (drag_target_ != DragTarget::None) {
+        if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+            if (drag_target_ == DragTarget::Start && mouse_pos != grid.end()) {
+                grid.set_start(mouse_pos);
+            } else if (drag_target_ == DragTarget::End && mouse_pos != grid.start()) {
+                grid.set_end(mouse_pos);
+            }
+            return; // drag takes priority, skip normal tool handling
+        }
+        drag_target_ = DragTarget::None;
     }
 
     if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
         switch (active_tool_) {
         case EditTool::Wall:
-            grid.set_wall(pos, true);
+            grid.set_wall(mouse_pos, true);
             break;
         case EditTool::Start:
-            grid.set_start(pos);
+            grid.set_start(mouse_pos);
             break;
         case EditTool::End:
-            grid.set_end(pos);
+            grid.set_end(mouse_pos);
             break;
         case EditTool::Erase:
-            grid.set_wall(pos, false);
+            grid.set_wall(mouse_pos, false);
             break;
         }
     }
+
+    // Right-click always erases regardless of active tool
+    if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+        grid.set_wall(mouse_pos, false);
+    }
+}
+
+Vec2i GridRenderer::screen_to_grid(ImVec2 screen_pos) const {
+    int x = static_cast<int>((screen_pos.x - grid_origin_.x) / cell_w_);
+    int y = static_cast<int>((screen_pos.y - grid_origin_.y) / cell_h_);
+    return {.x = x, .y = y};
 }
 
 void GridRenderer::set_tool(EditTool tool) {

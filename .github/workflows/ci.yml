@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            compiler: clang
+            cc: clang
+            cxx: clang++
+          - os: ubuntu-latest
+            compiler: gcc
+            cc: gcc
+            cxx: g++
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.compiler }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build libgl-dev libxinerama-dev libxcursor-dev libxi-dev libxrandr-dev
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: '4b77da7fed37817f124936239197833469f1b9a8'
+
+      - name: Configure (Debug)
+        run: |
+          cmake -B build/debug -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+            -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
+
+      - name: Build (Debug)
+        run: cmake --build build/debug
+
+      - name: Test
+        run: ctest --test-dir build/debug --output-on-failure
+
+      - name: Configure (Release)
+        run: |
+          cmake -B build/release -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+            -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
+
+      - name: Build (Release)
+        run: cmake --build build/release
+
+  format-check:
+    runs-on: ubuntu-latest
+    name: clang-format
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check formatting
+        run: |
+          find src tests -name '*.cpp' -o -name '*.hpp' | xargs clang-format --dry-run --Werror

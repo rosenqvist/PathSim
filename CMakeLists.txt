@@ -12,7 +12,11 @@ find_package(Catch2 3 CONFIG REQUIRED)
 
 # --- Main application ---
 add_executable(PathSim src/main.cpp src/ui/GridRenderer.cpp)
-target_compile_options(PathSim PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(PathSim PRIVATE
+    -Wall -Wextra -Wpedantic -Werror
+    $<$<CONFIG:Release>:-O3>
+    $<$<CONFIG:Release>:-flto>
+)
 
 target_link_libraries(PathSim
     PRIVATE
@@ -30,7 +34,11 @@ add_library(pathsim_core STATIC
     src/algo/AStar.cpp
     src/algo/Playback.cpp
 )
-target_compile_options(pathsim_core PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(pathsim_core PRIVATE
+    -Wall -Wextra -Wpedantic -Werror -Wno-unused-function
+    $<$<CONFIG:Release>:-O3>
+    $<$<CONFIG:Release>:-flto>
+)
 
 target_include_directories(pathsim_core
     PUBLIC

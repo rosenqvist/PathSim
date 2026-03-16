@@ -13,6 +13,11 @@
 #include <cstdlib>
 #include <string>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#endif
+
 namespace menu_bar {
 void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer, pathsim::Playback& playback);
 } // namespace menu_bar
@@ -21,14 +26,82 @@ namespace stats_panel {
 void draw(const pathsim::Playback& playback);
 } // namespace stats_panel
 
+struct AppState {
+    GLFWwindow* window{};
+    pathsim::Grid grid;
+    pathsim::GridRenderer renderer;
+    pathsim::Playback playback;
+
+    AppState() : grid(50, 30) {}
+};
+
+#ifdef __EMSCRIPTEN__
+void resize_canvas_to_window(GLFWwindow* window) {
+    double css_w{};
+    double css_h{};
+    double dpr = emscripten_get_device_pixel_ratio();
+
+    // Get CSS size via JavaScript
+    css_w = EM_ASM_DOUBLE({ return window.innerWidth; });
+    css_h = EM_ASM_DOUBLE({ return window.innerHeight; });
+
+    int buf_w = static_cast<int>(css_w * dpr);
+    int buf_h = static_cast<int>(css_h * dpr);
+
+    glfwSetWindowSize(window, buf_w, buf_h);
+}
+#endif
+
+void main_loop(void* arg) {
+    auto* app = static_cast<AppState*>(arg);
+
+#ifdef __EMSCRIPTEN__
+    resize_canvas_to_window(app->window);
+#endif
+
+    glfwPollEvents();
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    app->playback.update(app->grid);
+    app->renderer.draw(app->grid);
+
+    bool can_edit = app->playback.state() == pathsim::PlaybackState::Idle ||
+                    app->playback.state() == pathsim::PlaybackState::Finished;
+    app->renderer.handle_input(app->grid, can_edit);
+
+    menu_bar::draw(app->grid, app->renderer, app->playback);
+    stats_panel::draw(app->playback);
+
+    ImGui::Render();
+
+    int w{};
+    int h{};
+    glfwGetFramebufferSize(app->window, &w, &h);
+    glViewport(0, 0, w, h);
+    glClearColor(0.1F, 0.1F, 0.1F, 1.0F);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    glfwSwapBuffers(app->window);
+}
+
 int main() {
     if (glfwInit() == 0) {
         return EXIT_FAILURE;
     }
 
+#ifdef __EMSCRIPTEN__
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+#else
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#endif
 
     GLFWwindow* window = glfwCreateWindow(1920, 1080, "PathSim", nullptr, nullptr);
     if (window == nullptr) {
@@ -42,42 +115,38 @@ int main() {
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
 
+    // Scale UI for high-DPI displays
+    float dpi_scale{1.0F};
+
+#ifdef __EMSCRIPTEN__
+    dpi_scale = static_cast<float>(emscripten_get_device_pixel_ratio());
+#else
+    float x_scale{1.0F};
+    float y_scale{1.0F};
+    glfwGetWindowContentScale(window, &x_scale, &y_scale);
+    dpi_scale = x_scale;
+#endif
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.FontGlobalScale = dpi_scale;
+    ImGui::GetStyle().ScaleAllSizes(dpi_scale);
+
     ImGui_ImplGlfw_InitForOpenGL(window, true);
+
+#ifdef __EMSCRIPTEN__
+    ImGui_ImplOpenGL3_Init("#version 300 es");
+#else
     ImGui_ImplOpenGL3_Init("#version 330");
+#endif
 
-    pathsim::Grid grid(30, 20);
-    pathsim::GridRenderer renderer;
-    pathsim::Playback playback;
+    AppState app;
+    app.window = window;
 
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop_arg(main_loop, &app, 0, true);
+#else
     while (glfwWindowShouldClose(window) == 0) {
-        glfwPollEvents();
-
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        playback.update(grid);
-        renderer.draw(grid);
-
-        // modified to make sure grid cannot be modified during playback
-        bool can_edit = playback.state() == pathsim::PlaybackState::Idle ||
-                        playback.state() == pathsim::PlaybackState::Finished;
-        renderer.handle_input(grid, can_edit);
-
-        menu_bar::draw(grid, renderer, playback);
-        stats_panel::draw(playback);
-
-        ImGui::Render();
-
-        int w{};
-        int h{};
-        glfwGetFramebufferSize(window, &w, &h);
-        glViewport(0, 0, w, h);
-        glClearColor(0.1F, 0.1F, 0.1F, 1.0F);
-        glClear(GL_COLOR_BUFFER_BIT);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        glfwSwapBuffers(window);
+        main_loop(&app);
     }
 
     ImGui_ImplOpenGL3_Shutdown();
@@ -85,6 +154,7 @@ int main() {
     ImGui::DestroyContext();
     glfwDestroyWindow(window);
     glfwTerminate();
+#endif
 
     return EXIT_SUCCESS;
 }

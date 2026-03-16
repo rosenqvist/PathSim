@@ -71,3 +71,37 @@ jobs:
       - name: Check formatting
         run: |
           find src tests -name '*.cpp' -o -name '*.hpp' | xargs clang-format --dry-run --Werror
+          
+  build-web:
+    runs-on: ubuntu-latest
+    name: emscripten
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.56
+
+      - name: Configure
+        run: |
+          emcmake cmake -B build/web \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build/web
+
+      - name: Prepare deploy
+        run: |
+          mkdir -p deploy
+          cp build/web/web/PathSim.html deploy/index.html
+          cp build/web/web/PathSim.js deploy/
+          cp build/web/web/PathSim.wasm deploy/
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/master'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy

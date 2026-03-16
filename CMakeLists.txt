@@ -5,27 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(imgui CONFIG REQUIRED)
-find_package(glfw3 CONFIG REQUIRED)
-find_package(OpenGL REQUIRED)
-find_package(Catch2 3 CONFIG REQUIRED)
-
-# --- Main application ---
-add_executable(PathSim src/main.cpp src/ui/GridRenderer.cpp)
-target_compile_options(PathSim PRIVATE
-    -Wall -Wextra -Wpedantic -Werror
-    $<$<CONFIG:Release>:-O3>
-)
-
-target_link_libraries(PathSim
-    PRIVATE
-        pathsim_core
-        imgui::imgui
-        glfw
-        OpenGL::GL
-)
-
-# --- Core library (testable without UI) ---
+# --- Core library (testable without UI, no platform dependencies) ---
 add_library(pathsim_core STATIC
     src/core/Grid.cpp
     src/algo/BFS.cpp
@@ -37,30 +17,91 @@ target_compile_options(pathsim_core PRIVATE
     -Wall -Wextra -Wpedantic -Werror -Wno-unused-function
     $<$<CONFIG:Release>:-O3>
 )
-
 target_include_directories(pathsim_core
     PUBLIC
         ${PROJECT_SOURCE_DIR}/src
 )
 
-# --- Tests ---
-enable_testing()
+if(EMSCRIPTEN)
+    # --- Emscripten build: fetch ImGui, use Emscripten GLFW/OpenGL ---
+    include(FetchContent)
+    FetchContent_Declare(
+        imgui
+        GIT_REPOSITORY https://github.com/ocornut/imgui.git
+        GIT_TAG v1.92.6
+    )
+    FetchContent_MakeAvailable(imgui)
 
-add_executable(pathsim_tests
-    tests/grid_tests.cpp
-    tests/bfs_tests.cpp
-    tests/dijkstra_tests.cpp
-    tests/astar_tests.cpp
-    tests/playback_tests.cpp
-)
-target_compile_options(pathsim_tests PRIVATE -Wall -Wextra)
+    add_library(imgui_em STATIC
+        ${imgui_SOURCE_DIR}/imgui.cpp
+        ${imgui_SOURCE_DIR}/imgui_draw.cpp
+        ${imgui_SOURCE_DIR}/imgui_tables.cpp
+        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+        ${imgui_SOURCE_DIR}/imgui_demo.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+    )
+    target_include_directories(imgui_em PUBLIC
+        ${imgui_SOURCE_DIR}
+        ${imgui_SOURCE_DIR}/backends
+    )
+    target_compile_options(imgui_em PRIVATE -Wno-everything)
 
-target_link_libraries(pathsim_tests
-    PRIVATE
-        pathsim_core
-        Catch2::Catch2WithMain
-)
+    add_executable(PathSim src/main.cpp src/ui/GridRenderer.cpp)
+    target_compile_options(PathSim PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    target_link_libraries(PathSim PRIVATE pathsim_core imgui_em)
 
-include(CTest)
-include(Catch)
-catch_discover_tests(pathsim_tests)
+    set_target_properties(PathSim PROPERTIES
+        SUFFIX ".html"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/web"
+    )
+    target_link_options(PathSim PRIVATE
+        -sUSE_GLFW=3
+        -sWASM=1
+        -sALLOW_MEMORY_GROWTH=1
+        -sMIN_WEBGL_VERSION=2
+        -sMAX_WEBGL_VERSION=2
+        --shell-file ${CMAKE_SOURCE_DIR}/web/shell.html
+    )
+
+else()
+    # --- Desktop build: use vcpkg packages ---
+    find_package(imgui CONFIG REQUIRED)
+    find_package(glfw3 CONFIG REQUIRED)
+    find_package(OpenGL REQUIRED)
+
+    add_executable(PathSim src/main.cpp src/ui/GridRenderer.cpp)
+    target_compile_options(PathSim PRIVATE
+        -Wall -Wextra -Wpedantic -Werror
+        $<$<CONFIG:Release>:-O3>
+    )
+    target_link_libraries(PathSim
+        PRIVATE
+            pathsim_core
+            imgui::imgui
+            glfw
+            OpenGL::GL
+    )
+
+    # --- Tests (desktop only) ---
+    find_package(Catch2 3 CONFIG REQUIRED)
+    enable_testing()
+
+    add_executable(pathsim_tests
+        tests/grid_tests.cpp
+        tests/bfs_tests.cpp
+        tests/dijkstra_tests.cpp
+        tests/astar_tests.cpp
+        tests/playback_tests.cpp
+    )
+    target_compile_options(pathsim_tests PRIVATE -Wall -Wextra)
+    target_link_libraries(pathsim_tests
+        PRIVATE
+            pathsim_core
+            Catch2::Catch2WithMain
+    )
+
+    include(CTest)
+    include(Catch)
+    catch_discover_tests(pathsim_tests)
+endif()

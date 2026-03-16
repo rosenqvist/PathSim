@@ -47,9 +47,14 @@ void GridRenderer::draw(const Grid& grid) {
     ImGui::End();
 }
 
-void GridRenderer::handle_input(Grid& grid) {
+void GridRenderer::handle_input(Grid& grid, bool editing_enabled) {
     // Implementation for handling input
     if (!is_hovered_ || cell_w_ <= 0.0F || cell_h_ <= 0.0F) {
+        return;
+    }
+
+    // prevent editing during playback
+    if (!editing_enabled) {
         return;
     }
 

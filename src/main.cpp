@@ -55,7 +55,12 @@ int main() {
 
         playback.update(grid);
         renderer.draw(grid);
-        renderer.handle_input(grid);
+
+        // modified to make sure grid cannot be modified during playback
+        bool can_edit = playback.state() == pathsim::PlaybackState::Idle ||
+                        playback.state() == pathsim::PlaybackState::Finished;
+        renderer.handle_input(grid, can_edit);
+
         menu_bar::draw(grid, renderer, playback);
         stats_panel::draw(playback);
 

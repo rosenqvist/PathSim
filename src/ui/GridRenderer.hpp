@@ -16,7 +16,7 @@ class GridRenderer {
   public:
     // Draw the grid in an imgui window. called each frame
     void draw(const Grid& grid);
-    void handle_input(Grid& grid);
+    void handle_input(Grid& grid, bool editing_enabled = true);
 
     void set_tool(EditTool tool);
     [[nodiscard]] EditTool active_tool() const;

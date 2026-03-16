@@ -23,7 +23,13 @@ target_link_libraries(PathSim
 )
 
 # --- Core library (testable without UI) ---
-add_library(pathsim_core STATIC src/core/Grid.cpp src/algo/BFS.cpp src/algo/Playback.cpp)
+add_library(pathsim_core STATIC
+    src/core/Grid.cpp
+    src/algo/BFS.cpp
+    src/algo/Dijkstra.cpp
+    src/algo/AStar.cpp
+    src/algo/Playback.cpp
+)
 target_compile_options(pathsim_core PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 target_include_directories(pathsim_core
@@ -34,7 +40,13 @@ target_include_directories(pathsim_core
 # --- Tests ---
 enable_testing()
 
-add_executable(pathsim_tests tests/grid_tests.cpp tests/bfs_tests.cpp tests/playback_tests.cpp)
+add_executable(pathsim_tests
+    tests/grid_tests.cpp
+    tests/bfs_tests.cpp
+    tests/dijkstra_tests.cpp
+    tests/astar_tests.cpp
+    tests/playback_tests.cpp
+)
 target_compile_options(pathsim_tests PRIVATE -Wall -Wextra)
 
 target_link_libraries(pathsim_tests

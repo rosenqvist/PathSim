@@ -16,8 +16,8 @@ struct Vec2iHash {
     }
 };
 
-std::vector<Vec2i> reconstruct_path(const std::unordered_map<Vec2i, Vec2i, Vec2iHash>& came_from,
-                                    Vec2i start, Vec2i end) {
+void record_path(PathResult& result, const std::unordered_map<Vec2i, Vec2i, Vec2iHash>& came_from,
+                 const Grid& grid, Vec2i start, Vec2i end) {
 
     std::vector<Vec2i> path;
     Vec2i current = end;
@@ -29,12 +29,29 @@ std::vector<Vec2i> reconstruct_path(const std::unordered_map<Vec2i, Vec2i, Vec2i
     path.push_back(start);
 
     std::ranges::reverse(path);
-    return path;
+
+    float true_cost = 0.0F;
+    for (const auto& pos : path) {
+        if (pos != start) {
+            true_cost += grid.move_cost(pos);
+        }
+    }
+    result.path_cost = true_cost;
+
+    for (const auto& pos : path) {
+        if (pos != start && pos != end) {
+            result.steps.push_back({.position = pos, .new_state = CellState::Path});
+        }
+    }
+
+    result.path = std::move(path);
 }
+
 } // namespace
 
 PathResult bfs(const Grid& grid) {
     PathResult result;
+    result.algorithm_name = "BFS";
 
     Vec2i start = grid.start();
     Vec2i end = grid.end();
@@ -57,16 +74,7 @@ PathResult bfs(const Grid& grid) {
 
         // if goal is found, reconstruct and record the path
         if (current == end) {
-            std::vector<Vec2i> path = reconstruct_path(came_from, start, end);
-            result.path_cost = static_cast<float>(path.size() - 1);
-
-            for (const auto& pos : path) {
-                if (pos != start && pos != end) {
-                    result.steps.push_back({.position = pos, .new_state = CellState::Path});
-                }
-            }
-
-            result.path = std::move(path);
+            record_path(result, came_from, grid, start, end);
             return result;
         }
 

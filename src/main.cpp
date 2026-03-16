@@ -160,6 +160,18 @@ void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer, pathsim::Playbac
         if (ImGui::MenuItem("Erase", nullptr, tool == pathsim::EditTool::Erase)) {
             renderer.set_tool(pathsim::EditTool::Erase);
         }
+        ImGui::Separator();
+
+        if (ImGui::MenuItem("Weight Brush", nullptr, tool == pathsim::EditTool::Weight)) {
+            renderer.set_tool(pathsim::EditTool::Weight);
+        }
+
+        if (tool == pathsim::EditTool::Weight) {
+            int weight = renderer.weight_brush();
+            if (ImGui::SliderInt("Weight", &weight, 1, 9)) {
+                renderer.set_weight_brush(weight);
+            }
+        }
         ImGui::EndMenu();
     }
 
@@ -170,50 +182,57 @@ void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer, pathsim::Playbac
 } // namespace menu_bar
 
 namespace stats_panel {
+
 void draw(const pathsim::Playback& playback) {
     if (playback.state() == pathsim::PlaybackState::Idle) {
         return;
     }
 
     ImGui::SetNextWindowPos(ImVec2(10.0F, 40.0F), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(220.0F, 0.0F), ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Stats", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-    ImGui::Text("Progress: %d / %d", playback.current_step(), playback.total_steps());
-
     const auto& result = playback.result();
-    ImGui::Text("Nodes visited: %d", result.nodes_visited);
+
+    ImGui::Text("Algorithm: %s", result.algorithm_name);
+
+    ImGui::Separator();
+
+    ImGui::Text("Progress: %d / %d", playback.current_step(), playback.total_steps());
+    ImGui::Text("Nodes explored: %d", result.nodes_visited);
 
     if (playback.state() == pathsim::PlaybackState::Finished) {
+        ImGui::Separator();
+
         if (result.path.empty()) {
             ImGui::TextColored(ImVec4(1.0F, 0.3F, 0.3F, 1.0F), "No path found");
         } else {
-            ImGui::Text("Path length: %d", static_cast<int>(result.path.size()) - 1);
-            ImGui::Text("Path cost: %.1f", static_cast<double>(result.path_cost));
-        }
-    }
+            ImGui::Text("Path length: %d steps", static_cast<int>(result.path.size()) - 1);
+            ImGui::Text("Path cost: %.0f", static_cast<double>(result.path_cost));
 
-    ImGui::Separator();
-    // button inside stats panel tocopy stats to clipboard
-    if (ImGui::Button("Copy Stats")) {
-        std::string stats;
-        stats += "Nodes visited: " + std::to_string(result.nodes_visited) + "\n";
-
-        if (playback.state() == pathsim::PlaybackState::Finished) {
-            if (result.path.empty()) {
-                stats += "No path found\n";
+            if (std::string_view(result.algorithm_name) == "BFS") {
+                ImGui::TextColored(ImVec4(1.0F, 0.8F, 0.3F, 1.0F),
+                                   "BFS optimizes for fewest hops, not lowest cost");
             } else {
-                stats +=
-                    "Path length: " + std::to_string(static_cast<int>(result.path.size()) - 1) +
-                    "\n";
-                stats += "Path cost: " + std::to_string(result.path_cost) + "\n";
+                ImGui::TextColored(ImVec4(0.3F, 0.8F, 0.4F, 1.0F),
+                                   "%s optimizes for lowest total cost", result.algorithm_name);
             }
         }
 
-        ImGui::SetClipboardText(stats.c_str());
+        ImGui::Separator();
+
+        if (ImGui::Button("Copy Stats")) {
+            std::string stats;
+            stats += std::string(result.algorithm_name) + "\n";
+            stats += "Nodes explored: " + std::to_string(result.nodes_visited) + "\n";
+            stats += "Path length: " + std::to_string(static_cast<int>(result.path.size()) - 1) +
+                     " steps\n";
+            stats += "Path cost: " + std::to_string(result.path_cost) + "\n";
+            ImGui::SetClipboardText(stats.c_str());
+        }
     }
 
     ImGui::End();
 }
+
 } // namespace stats_panel

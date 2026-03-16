@@ -40,6 +40,7 @@ struct PathResult {
     std::vector<Vec2i> path;
     int nodes_visited{};
     float path_cost{};
+    const char* algorithm_name = "None";
 };
 
 } // namespace pathsim

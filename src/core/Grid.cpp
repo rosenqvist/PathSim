@@ -10,7 +10,8 @@ namespace pathsim {
 Grid::Grid(int width, int height)
     : width_(width), height_(height),
       cells_(static_cast<std::size_t>(width * height), CellState::Empty),
-      walls_(static_cast<std::size_t>(width * height), 0), start_{.x = 0, .y = 0},
+      walls_(static_cast<std::size_t>(width * height), 0),
+      weights_(static_cast<std::size_t>(width * height), 1), start_{.x = 0, .y = 0},
       end_{.x = width - 1, .y = height - 1} {
     assert(width > 0);
     assert(height > 0);
@@ -49,6 +50,30 @@ void Grid::set_wall(Vec2i pos, bool wall) {
 
     walls_[index_at(pos)] = static_cast<unsigned char>(wall);
     cells_[index_at(pos)] = wall ? CellState::Wall : CellState::Empty;
+
+    if (wall) {
+        weights_[index_at(pos)] = 1;
+    }
+}
+
+int Grid::weight(Vec2i pos) const {
+    assert(is_valid(pos));
+    return weights_[index_at(pos)];
+}
+
+void Grid::set_weight(Vec2i pos, int weight) {
+    assert(is_valid(pos));
+
+    if (pos == start_ || pos == end_) {
+        return;
+    }
+
+    weights_[index_at(pos)] = static_cast<uint8_t>(std::clamp(weight, 1, 9));
+}
+
+float Grid::move_cost(Vec2i pos) const {
+    assert(is_valid(pos));
+    return static_cast<float>(weights_[index_at(pos)]);
 }
 
 Vec2i Grid::start() const {
@@ -119,6 +144,7 @@ void Grid::reset_path_state() {
 void Grid::clear() {
     std::ranges::fill(cells_, CellState::Empty);
     std::ranges::fill(walls_, 0);
+    std::ranges::fill(weights_, 1);
 
     start_ = {.x = 0, .y = 0};
     end_ = {.x = width_ - 1, .y = height_ - 1};

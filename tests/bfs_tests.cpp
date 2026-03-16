@@ -64,3 +64,23 @@ TEST_CASE("BFS records visited nodes", "[bfs]") {
     REQUIRE(result.nodes_visited > 0);
     REQUIRE_FALSE(result.steps.empty());
 }
+
+TEST_CASE("BFS ignores weights and finds fewest hops", "[bfs]") {
+    pathsim::Grid grid(10, 3);
+
+    // Top row: all weight 1 (cheap but longer)
+    // Middle row: weight 9 (expensive but direct)
+    // Start at (0,1), end at (9,1) — direct path crosses weight 9
+    grid.set_start({.x = 0, .y = 1});
+    grid.set_end({.x = 9, .y = 1});
+
+    for (int col = 1; col < 9; ++col) {
+        grid.set_weight({.x = col, .y = 1}, 9);
+    }
+
+    pathsim::PathResult result = pathsim::bfs(grid);
+
+    REQUIRE_FALSE(result.path.empty());
+    // BFS takes the direct route: 9 hops
+    REQUIRE(result.path.size() == 10);
+}

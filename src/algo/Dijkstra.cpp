@@ -21,8 +21,9 @@ struct Node {
     bool operator>(const Node& other) const { return cost > other.cost; }
 };
 
-std::vector<Vec2i> reconstruct_path(const std::unordered_map<Vec2i, Vec2i, Vec2iHash>& came_from,
-                                    Vec2i start, Vec2i end) {
+void record_path(PathResult& result, const std::unordered_map<Vec2i, Vec2i, Vec2iHash>& came_from,
+                 const std::unordered_map<Vec2i, float, Vec2iHash>& cost_so_far, Vec2i start,
+                 Vec2i end) {
 
     std::vector<Vec2i> path;
     Vec2i current = end;
@@ -34,14 +35,7 @@ std::vector<Vec2i> reconstruct_path(const std::unordered_map<Vec2i, Vec2i, Vec2i
     path.push_back(start);
 
     std::ranges::reverse(path);
-    return path;
-}
 
-void record_path(PathResult& result, const std::unordered_map<Vec2i, Vec2i, Vec2iHash>& came_from,
-                 const std::unordered_map<Vec2i, float, Vec2iHash>& cost_so_far, Vec2i start,
-                 Vec2i end) {
-
-    std::vector<Vec2i> path = reconstruct_path(came_from, start, end);
     result.path_cost = cost_so_far.at(end);
 
     for (const auto& pos : path) {
@@ -57,6 +51,7 @@ void record_path(PathResult& result, const std::unordered_map<Vec2i, Vec2i, Vec2
 
 PathResult dijkstra(const Grid& grid) {
     PathResult result;
+    result.algorithm_name = "Dijkstra";
 
     Vec2i start = grid.start();
     Vec2i end = grid.end();
@@ -88,7 +83,7 @@ PathResult dijkstra(const Grid& grid) {
         }
 
         for (const auto& neighbor : grid.neighbors(current.pos)) {
-            float new_cost = cost_so_far[current.pos] + 1.0F;
+            float new_cost = cost_so_far[current.pos] + grid.move_cost(neighbor);
 
             if (!cost_so_far.contains(neighbor) || new_cost < cost_so_far[neighbor]) {
                 cost_so_far[neighbor] = new_cost;

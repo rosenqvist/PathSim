@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cassert>
+#include <cstdint>
 #include <vector>
 
 namespace pathsim {
@@ -31,6 +32,9 @@ class Grid {
     // wall operations, separate bitfields for fast pathfinding checks
     [[nodiscard]] bool is_wall(Vec2i pos) const;
     void set_wall(Vec2i pos, bool wall);
+    [[nodiscard]] int weight(Vec2i pos) const;
+    void set_weight(Vec2i pos, int weight);
+    [[nodiscard]] float move_cost(Vec2i pos) const;
 
     // start & end, enforcing exactly one of each
     [[nodiscard]] Vec2i start() const;
@@ -55,6 +59,7 @@ class Grid {
     int height_{};
     std::vector<CellState> cells_;
     std::vector<uint8_t> walls_;
+    std::vector<uint8_t> weights_;
     Vec2i start_{};
     Vec2i end_{};
 

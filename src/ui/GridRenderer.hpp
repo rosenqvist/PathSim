@@ -8,7 +8,7 @@
 
 namespace pathsim {
 
-enum class EditTool : std::uint8_t { Wall, Start, End, Erase };
+enum class EditTool : std::uint8_t { Wall, Start, End, Erase, Weight };
 
 enum class DragTarget : std::uint8_t { None, Start, End };
 
@@ -21,9 +21,12 @@ class GridRenderer {
     void set_tool(EditTool tool);
     [[nodiscard]] EditTool active_tool() const;
 
+    void set_weight_brush(int weight);
+    [[nodiscard]] int weight_brush() const;
+
   private:
     // Converts a cellstate to a display color
-    static ImU32 cell_color(CellState state);
+    static ImU32 cell_color(CellState state, int weight = 1);
 
     // Converts screen coordinates to grid position. Used for dragging start/end
     [[nodiscard]] Vec2i screen_to_grid(ImVec2 screen_pos) const;
@@ -34,6 +37,8 @@ class GridRenderer {
     float cell_h_{};
     ImVec2 grid_origin_ = {0.0F, 0.0F};
     bool is_hovered_{false};
+
+    int active_weight_ = 3;
 };
 
 } // namespace pathsim

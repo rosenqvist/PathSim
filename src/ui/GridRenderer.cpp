@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 
+#include <algorithm>
+
 namespace pathsim {
 
 void GridRenderer::draw(const Grid& grid) {
@@ -38,8 +40,21 @@ void GridRenderer::draw(const Grid& grid) {
             ImVec2 top_left{x_min, y_min};
             ImVec2 bottom_right{x_max, y_max};
 
-            draw_list->AddRectFilled(top_left, bottom_right, cell_color(grid.at(cell)));
+            draw_list->AddRectFilled(top_left, bottom_right,
+                                     cell_color(grid.at(cell), grid.weight(cell)));
             draw_list->AddRect(top_left, bottom_right, IM_COL32(40, 40, 40, 255));
+
+            if (grid.weight(cell) > 1 && grid.at(cell) == CellState::Empty) {
+                std::array<char, 4> label{};
+                std::snprintf(label.data(), label.size(), "%d", grid.weight(cell));
+
+                ImVec2 text_size = ImGui::CalcTextSize(label.data());
+                float text_x = x_min + ((cell_w_ - text_size.x) * 0.5F);
+                float text_y = y_min + ((cell_h_ - text_size.y) * 0.5F);
+
+                draw_list->AddText(ImVec2{text_x, text_y}, IM_COL32(255, 255, 255, 180),
+                                   label.data());
+            }
         }
     }
 
@@ -115,12 +130,16 @@ void GridRenderer::handle_input(Grid& grid, bool editing_enabled) {
         case EditTool::Erase:
             grid.set_wall(mouse_pos, false);
             break;
+        case EditTool::Weight:
+            grid.set_weight(mouse_pos, active_weight_);
+            break;
         }
     }
 
     // Right-click always erases regardless of active tool
     if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
         grid.set_wall(mouse_pos, false);
+        grid.set_weight(mouse_pos, 1);
     }
 }
 
@@ -138,10 +157,24 @@ EditTool GridRenderer::active_tool() const {
     return active_tool_;
 }
 
-ImU32 GridRenderer::cell_color(CellState state) {
+void GridRenderer::set_weight_brush(int weight) {
+    active_weight_ = std::clamp(weight, 1, 9);
+}
+
+int GridRenderer::weight_brush() const {
+    return active_weight_;
+}
+
+ImU32 GridRenderer::cell_color(CellState state, int weight) {
     switch (state) {
-    case CellState::Empty:
-        return IM_COL32(30, 30, 30, 255);
+    case CellState::Empty: {
+        // Gradient from dark (weight 1) to warm orange (weight 9)
+        float t = static_cast<float>(weight - 1) / 8.0F;
+        auto r = static_cast<uint8_t>(30.0F + (t * 140.0F));
+        auto g = static_cast<uint8_t>(30.0F + (t * 70.0F));
+        auto b = static_cast<uint8_t>(30.0F - (t * 20.0F));
+        return IM_COL32(r, g, b, 255);
+    }
     case CellState::Wall:
         return IM_COL32(180, 180, 180, 255);
     case CellState::Start:

@@ -14,6 +14,10 @@ namespace menu_bar {
 void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer, pathsim::Playback& playback);
 } // namespace menu_bar
 
+namespace stats_panel {
+void draw(const pathsim::Playback& playback);
+} // namespace stats_panel
+
 int main() {
     if (glfwInit() == 0) {
         return EXIT_FAILURE;
@@ -53,6 +57,7 @@ int main() {
         renderer.draw(grid);
         renderer.handle_input(grid);
         menu_bar::draw(grid, renderer, playback);
+        stats_panel::draw(playback);
 
         ImGui::Render();
 
@@ -77,7 +82,6 @@ int main() {
 }
 
 namespace menu_bar {
-
 void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer, pathsim::Playback& playback) {
     if (!ImGui::BeginMainMenuBar()) {
         return;
@@ -141,5 +145,33 @@ void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer, pathsim::Playbac
 
     ImGui::EndMainMenuBar();
 }
-
 } // namespace menu_bar
+
+namespace stats_panel {
+void draw(const pathsim::Playback& playback) {
+    if (playback.state() == pathsim::PlaybackState::Idle) {
+        return;
+    }
+
+    ImGui::SetNextWindowPos(ImVec2(10.0F, 40.0F), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(220.0F, 0.0F), ImGuiCond_FirstUseEver);
+
+    ImGui::Begin("Stats", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+    ImGui::Text("Progress: %d / %d", playback.current_step(), playback.total_steps());
+
+    const auto& result = playback.result();
+    ImGui::Text("Nodes visited: %d", result.nodes_visited);
+
+    if (playback.state() == pathsim::PlaybackState::Finished) {
+        if (result.path.empty()) {
+            ImGui::TextColored(ImVec4(1.0F, 0.3F, 0.3F, 1.0F), "No path found");
+        } else {
+            ImGui::Text("Path length: %d", static_cast<int>(result.path.size()) - 1);
+            ImGui::Text("Path cost: %.1f", static_cast<double>(result.path_cost));
+        }
+    }
+
+    ImGui::End();
+}
+} // namespace stats_panel

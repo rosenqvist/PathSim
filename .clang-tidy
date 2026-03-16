@@ -9,6 +9,7 @@ Checks: >
   -readability-identifier-length,
   -readability-magic-numbers,
   -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-type-vararg,  # ImGui API uses C-style varargs
 
 CheckOptions:
   - key: readability-identifier-naming.ClassCase
@@ -27,5 +28,6 @@ CheckOptions:
     value: CamelCase
   - key: readability-identifier-naming.NamespaceCase
     value: lower_case
+    
 
 HeaderFilterRegex: 'src/.*\.hpp'

@@ -11,6 +11,7 @@
 #include <imgui_impl_opengl3.h>
 
 #include <cstdlib>
+#include <string>
 
 namespace menu_bar {
 void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer, pathsim::Playback& playback);
@@ -191,6 +192,26 @@ void draw(const pathsim::Playback& playback) {
             ImGui::Text("Path length: %d", static_cast<int>(result.path.size()) - 1);
             ImGui::Text("Path cost: %.1f", static_cast<double>(result.path_cost));
         }
+    }
+
+    ImGui::Separator();
+    // button inside stats panel tocopy stats to clipboard
+    if (ImGui::Button("Copy Stats")) {
+        std::string stats;
+        stats += "Nodes visited: " + std::to_string(result.nodes_visited) + "\n";
+
+        if (playback.state() == pathsim::PlaybackState::Finished) {
+            if (result.path.empty()) {
+                stats += "No path found\n";
+            } else {
+                stats +=
+                    "Path length: " + std::to_string(static_cast<int>(result.path.size()) - 1) +
+                    "\n";
+                stats += "Path cost: " + std::to_string(result.path_cost) + "\n";
+            }
+        }
+
+        ImGui::SetClipboardText(stats.c_str());
     }
 
     ImGui::End();

@@ -15,7 +15,6 @@ add_executable(PathSim src/main.cpp src/ui/GridRenderer.cpp)
 target_compile_options(PathSim PRIVATE
     -Wall -Wextra -Wpedantic -Werror
     $<$<CONFIG:Release>:-O3>
-    $<$<CONFIG:Release>:-flto>
 )
 
 target_link_libraries(PathSim

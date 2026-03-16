@@ -1,3 +1,5 @@
+#include "algo/BFS.hpp"
+#include "algo/Playback.hpp"
 #include "core/Grid.hpp"
 #include "ui/GridRenderer.hpp"
 
@@ -9,7 +11,7 @@
 #include <cstdlib>
 
 namespace menu_bar {
-void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer);
+void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer, pathsim::Playback& playback);
 } // namespace menu_bar
 
 int main() {
@@ -38,6 +40,7 @@ int main() {
 
     pathsim::Grid grid(30, 20);
     pathsim::GridRenderer renderer;
+    pathsim::Playback playback;
 
     while (glfwWindowShouldClose(window) == 0) {
         glfwPollEvents();
@@ -46,9 +49,10 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        playback.update(grid);
         renderer.draw(grid);
         renderer.handle_input(grid);
-        menu_bar::draw(grid, renderer);
+        menu_bar::draw(grid, renderer, playback);
 
         ImGui::Render();
 
@@ -74,13 +78,14 @@ int main() {
 
 namespace menu_bar {
 
-void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer) {
+void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer, pathsim::Playback& playback) {
     if (!ImGui::BeginMainMenuBar()) {
         return;
     }
 
     if (ImGui::BeginMenu("Menu")) {
         if (ImGui::MenuItem("Clear Grid")) {
+            playback.reset(grid);
             grid.clear();
         }
         ImGui::EndMenu();
@@ -100,6 +105,37 @@ void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer) {
         if (ImGui::MenuItem("Erase", nullptr, tool == pathsim::EditTool::Erase)) {
             renderer.set_tool(pathsim::EditTool::Erase);
         }
+        ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Algorithm")) {
+        auto state = playback.state();
+
+        if (ImGui::MenuItem("Run BFS", nullptr, false,
+                            state == pathsim::PlaybackState::Idle ||
+                                state == pathsim::PlaybackState::Finished)) {
+            playback.start(pathsim::bfs(grid), grid);
+        }
+
+        if (ImGui::MenuItem("Pause", nullptr, false, state == pathsim::PlaybackState::Playing)) {
+            playback.pause();
+        }
+
+        if (ImGui::MenuItem("Resume", nullptr, false, state == pathsim::PlaybackState::Paused)) {
+            playback.resume();
+        }
+
+        if (ImGui::MenuItem("Reset", nullptr, false, state != pathsim::PlaybackState::Idle)) {
+            playback.reset(grid);
+        }
+
+        ImGui::Separator();
+
+        int speed = playback.speed();
+        if (ImGui::SliderInt("Speed", &speed, 1, 50)) {
+            playback.set_speed(speed);
+        }
+
         ImGui::EndMenu();
     }
 

@@ -37,18 +37,10 @@ struct AppState {
 
 #ifdef __EMSCRIPTEN__
 void resize_canvas_to_window(GLFWwindow* window) {
-    double css_w{};
-    double css_h{};
-    double dpr = emscripten_get_device_pixel_ratio();
+    double css_w = EM_ASM_DOUBLE({ return window.innerWidth; });
+    double css_h = EM_ASM_DOUBLE({ return window.innerHeight; });
 
-    // Get CSS size via JavaScript
-    css_w = EM_ASM_DOUBLE({ return window.innerWidth; });
-    css_h = EM_ASM_DOUBLE({ return window.innerHeight; });
-
-    int buf_w = static_cast<int>(css_w * dpr);
-    int buf_h = static_cast<int>(css_h * dpr);
-
-    glfwSetWindowSize(window, buf_w, buf_h);
+    glfwSetWindowSize(window, static_cast<int>(css_w), static_cast<int>(css_h));
 }
 #endif
 

@@ -14,11 +14,12 @@
 #include <string>
 
 #ifdef __EMSCRIPTEN__
-#include <GLFW/emscripten_glfw3.h>
-
 #include <emscripten.h>
 #include <emscripten/html5.h>
 
+extern "C" void emscripten_glfw_make_canvas_resizable(GLFWwindow* window,
+                                                      const char* canvas_resize_selector,
+                                                      const char* handle_selector);
 #endif
 
 namespace menu_bar {
@@ -95,7 +96,7 @@ int main() {
 
 #ifdef __EMSCRIPTEN__
     // Let contrib.glfw3 handle canvas resizing to fill the browser window
-    emscripten::glfw3::MakeCanvasResizable(window, "window");
+    emscripten_glfw_make_canvas_resizable(window, "window", nullptr);
 #endif
 
     IMGUI_CHECKVERSION();

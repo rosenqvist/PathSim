@@ -48,7 +48,7 @@ if(EMSCRIPTEN)
     target_compile_options(imgui_em PRIVATE -Wno-everything)
 
     add_executable(PathSim src/main.cpp src/ui/GridRenderer.cpp)
-    target_compile_options(PathSim PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    target_compile_options(PathSim PRIVATE -Wall -Wextra -Wpedantic -Werror --use-port=contrib.glfw3)
     target_link_libraries(PathSim PRIVATE pathsim_core imgui_em)
 
     set_target_properties(PathSim PROPERTIES
@@ -56,13 +56,15 @@ if(EMSCRIPTEN)
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/web"
     )
     target_link_options(PathSim PRIVATE
-        -sUSE_GLFW=3
+        --use-port=contrib.glfw3
         -sWASM=1
         -sALLOW_MEMORY_GROWTH=1
         -sMIN_WEBGL_VERSION=2
         -sMAX_WEBGL_VERSION=2
         --shell-file ${CMAKE_SOURCE_DIR}/web/shell.html
+        --embed-file ${CMAKE_SOURCE_DIR}/resources/fonts/Roboto-Medium.ttf@/resources/fonts/Roboto-Medium.ttf
     )
+    
 
 else()
     # --- Desktop build: use vcpkg packages ---
@@ -81,6 +83,12 @@ else()
             imgui::imgui
             glfw
             OpenGL::GL
+    )
+
+    add_custom_command(TARGET PathSim POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/resources
+            $<TARGET_FILE_DIR:PathSim>/resources
     )
 
     # --- Tests (desktop only) ---

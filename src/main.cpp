@@ -14,8 +14,11 @@
 #include <string>
 
 #ifdef __EMSCRIPTEN__
+#include <GLFW/emscripten_glfw3.h>
+
 #include <emscripten.h>
 #include <emscripten/html5.h>
+
 #endif
 
 namespace menu_bar {
@@ -32,24 +35,11 @@ struct AppState {
     pathsim::GridRenderer renderer;
     pathsim::Playback playback;
 
-    AppState() : grid(50, 30) {}
+    AppState() : grid(40, 30) {}
 };
-
-#ifdef __EMSCRIPTEN__
-void resize_canvas_to_window(GLFWwindow* window) {
-    double css_w = EM_ASM_DOUBLE({ return window.innerWidth; });
-    double css_h = EM_ASM_DOUBLE({ return window.innerHeight; });
-
-    glfwSetWindowSize(window, static_cast<int>(css_w), static_cast<int>(css_h));
-}
-#endif
 
 void main_loop(void* arg) {
     auto* app = static_cast<AppState*>(arg);
-
-#ifdef __EMSCRIPTEN__
-    resize_canvas_to_window(app->window);
-#endif
 
     glfwPollEvents();
 
@@ -95,7 +85,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif
 
-    GLFWwindow* window = glfwCreateWindow(1920, 1080, "PathSim", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(2560, 1440, "PathSim", nullptr, nullptr);
     if (window == nullptr) {
         glfwTerminate();
         return EXIT_FAILURE;
@@ -103,25 +93,35 @@ int main() {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
+#ifdef __EMSCRIPTEN__
+    // Let contrib.glfw3 handle canvas resizing to fill the browser window
+    emscripten::glfw3::MakeCanvasResizable(window, "window");
+#endif
+
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
 
-    // Scale UI for high-DPI displays
-    float dpi_scale{1.0F};
-
+    float dpi_scale = 1.0F;
 #ifdef __EMSCRIPTEN__
     dpi_scale = static_cast<float>(emscripten_get_device_pixel_ratio());
 #else
-    float x_scale{1.0F};
-    float y_scale{1.0F};
+    float x_scale = 1.0F;
+    float y_scale = 1.0F;
     glfwGetWindowContentScale(window, &x_scale, &y_scale);
     dpi_scale = x_scale;
 #endif
 
     ImGuiIO& io = ImGui::GetIO();
-    io.FontGlobalScale = dpi_scale;
+    float font_size = 16.0F * dpi_scale;
+
+#ifdef __EMSCRIPTEN__
+    io.Fonts->AddFontFromFileTTF("/resources/fonts/Roboto-Medium.ttf", font_size);
+    io.FontGlobalScale = 1.0F / dpi_scale;
+#else
+    io.Fonts->AddFontFromFileTTF("resources/fonts/Roboto-Medium.ttf", font_size);
     ImGui::GetStyle().ScaleAllSizes(dpi_scale);
+#endif
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
 

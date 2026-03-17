@@ -17,9 +17,9 @@
 #include <emscripten.h>
 #include <emscripten/html5.h>
 
-extern "C" void emscripten_glfw_make_canvas_resizable(GLFWwindow* window,
-                                                      const char* canvas_resize_selector,
-                                                      const char* handle_selector);
+extern "C" int emscripten_glfw_make_canvas_resizable(GLFWwindow* window,
+                                                     const char* canvas_resize_selector,
+                                                     const char* handle_selector);
 #endif
 
 namespace menu_bar {

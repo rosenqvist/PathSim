@@ -53,7 +53,7 @@ void GridRenderer::draw(const Grid& grid) {
                 float text_x = x_min + ((cell_w_ - text_size.x) * 0.5F);
                 float text_y = y_min + ((cell_h_ - text_size.y) * 0.5F);
 
-                draw_list->AddText(ImVec2{text_x, text_y}, IM_COL32(255, 255, 255, 180),
+                draw_list->AddText(ImVec2{text_x, text_y}, IM_COL32(255, 255, 255, 220),
                                    label.data());
             }
         }
@@ -182,11 +182,13 @@ bool GridRenderer::has_hovered_cell() const {
 ImU32 GridRenderer::cell_color(CellState state, int weight) {
     switch (state) {
     case CellState::Empty: {
-        // Gradient from dark (weight 1) to warm orange (weight 9)
-        float t = static_cast<float>(weight - 1) / 8.0F;
-        auto r = static_cast<uint8_t>(30.0F + (t * 140.0F));
-        auto g = static_cast<uint8_t>(30.0F + (t * 70.0F));
-        auto b = static_cast<uint8_t>(30.0F - (t * 20.0F));
+        if (weight <= 1) {
+            return IM_COL32(30, 30, 30, 255);
+        }
+        float t = static_cast<float>(weight - 2) / 7.0F;
+        auto r = static_cast<uint8_t>(80.0F + (t * 140.0F)); // 80 → 220
+        auto g = static_cast<uint8_t>(90.0F + (t * 30.0F));  // 90 → 120
+        auto b = static_cast<uint8_t>(120.0F - (t * 90.0F)); // 120 → 30
         return IM_COL32(r, g, b, 255);
     }
     case CellState::Wall:

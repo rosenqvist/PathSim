@@ -13,6 +13,7 @@
 
 #include <array>
 #include <cstdlib>
+#include <math.h>
 #include <string>
 
 #ifdef __EMSCRIPTEN__
@@ -156,6 +157,66 @@ int main() {
 
 namespace menu_bar {
 
+void draw_active_tool(const pathsim::GridRenderer& renderer) {
+    const char* tool_name = nullptr;
+    switch (renderer.active_tool()) {
+    case pathsim::EditTool::Wall:
+        tool_name = "Wall";
+        break;
+    case pathsim::EditTool::Start:
+        tool_name = "Start";
+        break;
+    case pathsim::EditTool::End:
+        tool_name = "End";
+        break;
+    case pathsim::EditTool::Erase:
+        tool_name = "Erase";
+        break;
+    case pathsim::EditTool::Weight: {
+        int w = renderer.weight_brush();
+        std::array<char, 8> num{};
+        std::snprintf(num.data(), num.size(), "%d", w);
+
+        const char* prefix = "Tool: Weight Brush (";
+        const char* suffix = ")";
+
+        float total_w = ImGui::CalcTextSize(prefix).x + ImGui::CalcTextSize(num.data()).x +
+                        ImGui::CalcTextSize(suffix).x;
+        float bar_w = ImGui::GetMainViewport()->Size.x;
+        ImGui::SameLine((bar_w - total_w) * 0.5F);
+
+        ImVec4 white(1.0F, 1.0F, 1.0F, 0.9F);
+        float t = static_cast<float>(w - 2) / 7.0F;
+        float r{};
+        float g{};
+        float b{};
+        if (w <= 1) {
+            r = 0.8F;
+            g = 0.8F;
+            b = 0.8F;
+        } else {
+            r = (150.0F + (t * 115.0F)) / 255.0F; // 140 → 255
+            g = (160.0F + (t * 20.0F)) / 255.0F;  // 140 → 160
+            b = (170.0F - (t * 130.0F)) / 255.0F; // 170 → 40
+        }
+
+        ImGui::TextColored(white, "%s", prefix);
+        ImGui::SameLine(0.0F, 0.0F);
+        ImGui::TextColored(ImVec4(r, g, b, 1.0F), "%s", num.data());
+        ImGui::SameLine(0.0F, 0.0F);
+        ImGui::TextColored(white, "%s", suffix);
+        return;
+    }
+    }
+
+    std::array<char, 32> label{};
+    std::snprintf(label.data(), label.size(), "Tool: %s", tool_name);
+    float text_w = ImGui::CalcTextSize(label.data()).x;
+    float bar_w = ImGui::GetMainViewport()->Size.x;
+    ImGui::SameLine((bar_w - text_w) * 0.5F);
+    ImGui::TextColored(ImVec4(1.0F, 1.0F, 1.0F, 0.9F), "%s", label.data());
+}
+
 void draw_hover_info(const pathsim::Grid& grid, const pathsim::GridRenderer& renderer) {
     if (!renderer.has_hovered_cell()) {
         return;
@@ -291,6 +352,7 @@ void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer, pathsim::Playbac
 
     draw_algorithm_menu(playback, grid);
     draw_maze_menu(playback, grid);
+    draw_active_tool(renderer);
     draw_hover_info(grid, renderer);
 
     ImGui::EndMainMenuBar();

@@ -11,6 +11,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#include <array>
 #include <cstdlib>
 #include <string>
 
@@ -155,6 +156,30 @@ int main() {
 
 namespace menu_bar {
 
+void draw_hover_info(const pathsim::Grid& grid, const pathsim::GridRenderer& renderer) {
+    if (!renderer.has_hovered_cell()) {
+        return;
+    }
+
+    pathsim::Vec2i cell = renderer.hovered_cell();
+    if (!grid.is_valid(cell)) {
+        return;
+    }
+
+    std::array<char, 48> label{};
+    int w = grid.weight(cell);
+    if (w > 1) {
+        std::snprintf(label.data(), label.size(), "(%d, %d)  weight: %d", cell.x, cell.y, w);
+    } else {
+        std::snprintf(label.data(), label.size(), "(%d, %d)", cell.x, cell.y);
+    }
+
+    float text_width = ImGui::CalcTextSize(label.data()).x;
+    float bar_width = ImGui::GetWindowContentRegionMax().x;
+    ImGui::SameLine(bar_width - text_width - 10.0F);
+    ImGui::TextColored(ImVec4(1.0F, 1.0F, 1.0F, 0.9F), "%s", label.data());
+}
+
 void draw_maze_menu(pathsim::Playback& playback, pathsim::Grid& grid) {
     if (!ImGui::BeginMenu("Maze")) {
         return;
@@ -266,6 +291,7 @@ void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer, pathsim::Playbac
 
     draw_algorithm_menu(playback, grid);
     draw_maze_menu(playback, grid);
+    draw_hover_info(grid, renderer);
 
     ImGui::EndMainMenuBar();
 }

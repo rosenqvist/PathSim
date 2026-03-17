@@ -66,12 +66,17 @@ void GridRenderer::draw(const Grid& grid) {
         int hy = static_cast<int>((mouse_pos.y - grid_origin_.y) / cell_h_);
         Vec2i hover_cell{.x = hx, .y = hy};
 
-        if (grid.is_valid(hover_cell)) {
+        has_hover_ = grid.is_valid(hover_cell);
+        hovered_cell_ = hover_cell;
+
+        if (has_hover_) {
             float x_min = grid_origin_.x + (static_cast<float>(hx) * cell_w_);
             float y_min = grid_origin_.y + (static_cast<float>(hy) * cell_h_);
             draw_list->AddRect(ImVec2{x_min, y_min}, ImVec2{x_min + cell_w_, y_min + cell_h_},
                                IM_COL32(255, 255, 255, 120), 0.0F, 0, 2.0F);
         }
+    } else {
+        has_hover_ = false;
     }
 
     ImGui::Dummy(available);
@@ -164,6 +169,14 @@ void GridRenderer::set_weight_brush(int weight) {
 
 int GridRenderer::weight_brush() const {
     return active_weight_;
+}
+
+Vec2i GridRenderer::hovered_cell() const {
+    return hovered_cell_;
+}
+
+bool GridRenderer::has_hovered_cell() const {
+    return has_hover_;
 }
 
 ImU32 GridRenderer::cell_color(CellState state, int weight) {

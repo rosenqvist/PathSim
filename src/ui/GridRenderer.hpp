@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../core/Grid.hpp"
+#include "core/Types.hpp"
 
 #include <imgui.h>
 
@@ -24,6 +25,9 @@ class GridRenderer {
     void set_weight_brush(int weight);
     [[nodiscard]] int weight_brush() const;
 
+    [[nodiscard]] Vec2i hovered_cell() const;
+    [[nodiscard]] bool has_hovered_cell() const;
+
   private:
     // Converts a cellstate to a display color
     static ImU32 cell_color(CellState state, int weight = 1);
@@ -39,6 +43,9 @@ class GridRenderer {
     bool is_hovered_{false};
 
     int active_weight_ = 3;
+
+    Vec2i hovered_cell_{.x = -1, .y = -1};
+    bool has_hover_{false};
 };
 
 } // namespace pathsim

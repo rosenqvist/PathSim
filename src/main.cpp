@@ -1,6 +1,7 @@
 #include "algo/AStar.hpp"
 #include "algo/BFS.hpp"
 #include "algo/Dijkstra.hpp"
+#include "algo/MazeGen.hpp"
 #include "algo/Playback.hpp"
 #include "core/Grid.hpp"
 #include "ui/GridRenderer.hpp"
@@ -103,12 +104,12 @@ int main() {
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
 
-    float dpi_scale = 1.0F;
+    float dpi_scale{1.0F};
 #ifdef __EMSCRIPTEN__
     dpi_scale = static_cast<float>(emscripten_get_device_pixel_ratio());
 #else
-    float x_scale = 1.0F;
-    float y_scale = 1.0F;
+    float x_scale{1.0F};
+    float y_scale{1.0F};
     glfwGetWindowContentScale(window, &x_scale, &y_scale);
     dpi_scale = x_scale;
 #endif
@@ -153,6 +154,31 @@ int main() {
 }
 
 namespace menu_bar {
+
+void draw_maze_menu(pathsim::Playback& playback, pathsim::Grid& grid) {
+    if (!ImGui::BeginMenu("Maze")) {
+        return;
+    }
+
+    auto state = playback.state();
+    bool can_generate =
+        state == pathsim::PlaybackState::Idle || state == pathsim::PlaybackState::Finished;
+
+    if (ImGui::MenuItem("Maze", nullptr, false, can_generate)) {
+        playback.reset(grid);
+        pathsim::generate(grid, pathsim::GenerateMode::Maze);
+    }
+    if (ImGui::MenuItem("Terrain", nullptr, false, can_generate)) {
+        playback.reset(grid);
+        pathsim::generate(grid, pathsim::GenerateMode::Terrain);
+    }
+    if (ImGui::MenuItem("Maze + Terrain", nullptr, false, can_generate)) {
+        playback.reset(grid);
+        pathsim::generate(grid, pathsim::GenerateMode::MazeTerrain);
+    }
+
+    ImGui::EndMenu();
+}
 
 void draw_algorithm_menu(pathsim::Playback& playback, pathsim::Grid& grid) {
     if (!ImGui::BeginMenu("Algorithm")) {
@@ -239,6 +265,7 @@ void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer, pathsim::Playbac
     }
 
     draw_algorithm_menu(playback, grid);
+    draw_maze_menu(playback, grid);
 
     ImGui::EndMainMenuBar();
 }

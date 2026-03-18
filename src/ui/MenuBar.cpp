@@ -291,8 +291,6 @@ void draw_hover_info(const Grid& grid, const GridRenderer& renderer) {
     ImGui::TextColored(ImVec4(1.0F, 1.0F, 1.0F, 0.9F), "%s", label.data());
 }
 
-} // namespace
-
 void draw_tools_menu(GridRenderer& renderer) {
     if (!ImGui::BeginMenu("Tools")) {
         return;
@@ -351,6 +349,8 @@ void draw_tools_menu(GridRenderer& renderer) {
 
     ImGui::EndMenu();
 }
+
+} // namespace
 
 void draw(Grid& grid, GridRenderer& renderer, Playback& playback, AlgoHistory& history,
           ViewSettings& view) {

@@ -3,6 +3,7 @@
 #include <imgui.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 
 namespace pathsim {
@@ -489,10 +490,8 @@ ImU32 GridRenderer::cell_color(CellState state, int weight) {
         return IM_COL32(80, 70, 30, 255);
     case CellState::Waypoint:
         return IM_COL32(255, 160, 0, 255);
-        break;
     case CellState::Impassable:
         return IM_COL32(50, 20, 20, 255);
-        break;
     }
     return IM_COL32(0, 0, 0, 255);
 }

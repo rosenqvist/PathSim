@@ -12,4 +12,7 @@ void record_path(PathResult& result, const std::unordered_map<Vec2i, Vec2i, Vec2
                  const std::unordered_map<Vec2i, float, Vec2iHash>& cost_so_far, Vec2i start,
                  Vec2i end);
 
+// Extracts lightweight stats from a full PathResult
+AlgoStats extract_stats(const PathResult& result);
+
 } // namespace pathsim::algo_utils

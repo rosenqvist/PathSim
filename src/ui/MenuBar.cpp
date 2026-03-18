@@ -1,5 +1,6 @@
 #include "MenuBar.hpp"
 
+#include "../algo/AlgoUtils.hpp"
 #include "../algo/AStar.hpp"
 #include "../algo/BFS.hpp"
 #include "../algo/Dijkstra.hpp"
@@ -9,45 +10,86 @@
 #include <imgui.h>
 
 #include <array>
+#include <chrono>
 #include <cstdio>
 
 namespace pathsim::menu_bar {
 namespace {
 
-void draw_algorithm_menu(Playback& playback, Grid& grid) {
+void run_algorithm(Playback& playback, Grid& grid, AlgoHistory& history, const AlgoFunc& algo) {
+    history.clear();
+
+    auto t0 = std::chrono::high_resolution_clock::now();
+    auto result = find_path_with_waypoints(grid, algo);
+    auto t1 = std::chrono::high_resolution_clock::now();
+
+    result.compute_time_ms = std::chrono::duration<float, std::milli>(t1 - t0).count();
+    history[result.algorithm_name] = algo_utils::extract_stats(result);
+    playback.start(std::move(result), grid);
+}
+
+void draw_algorithm_menu(Playback& playback, Grid& grid, AlgoHistory& history) {
     if (!ImGui::BeginMenu("Algorithm")) {
         return;
     }
 
     auto state = playback.state();
-
     bool can_run = state == PlaybackState::Idle || state == PlaybackState::Finished;
 
     if (ImGui::MenuItem("Run BFS", nullptr, false, can_run)) {
-        playback.start(find_path_with_waypoints(
-                           grid, [](const Grid& g, Vec2i s, Vec2i e) { return bfs(g, s, e); }),
-                       grid);
+        run_algorithm(playback, grid, history,
+                      [](const Grid& g, Vec2i s, Vec2i e) { return bfs(g, s, e); });
     }
     if (ImGui::MenuItem("Run Dijkstra", nullptr, false, can_run)) {
-        playback.start(find_path_with_waypoints(
-                           grid, [](const Grid& g, Vec2i s, Vec2i e) { return dijkstra(g, s, e); }),
-                       grid);
+        run_algorithm(playback, grid, history,
+                      [](const Grid& g, Vec2i s, Vec2i e) { return dijkstra(g, s, e); });
     }
     if (ImGui::MenuItem("Run A*", nullptr, false, can_run)) {
-        playback.start(find_path_with_waypoints(
-                           grid, [](const Grid& g, Vec2i s, Vec2i e) { return a_star(g, s, e); }),
-                       grid);
+        run_algorithm(playback, grid, history,
+                      [](const Grid& g, Vec2i s, Vec2i e) { return a_star(g, s, e); });
     }
 
     ImGui::Separator();
 
-    if (ImGui::MenuItem("Pause", nullptr, false, state == PlaybackState::Playing)) {
+    if (ImGui::MenuItem("Run All", nullptr, false, can_run)) {
+        auto run_and_record = [&](const AlgoFunc& algo) {
+            auto t0 = std::chrono::high_resolution_clock::now();
+            auto result = find_path_with_waypoints(grid, algo);
+            auto t1 = std::chrono::high_resolution_clock::now();
+            result.compute_time_ms = std::chrono::duration<float, std::milli>(t1 - t0).count();
+            history[result.algorithm_name] = algo_utils::extract_stats(result);
+            return result;
+        };
+
+        run_and_record([](const Grid& g, Vec2i s, Vec2i e) { return bfs(g, s, e); });
+        run_and_record([](const Grid& g, Vec2i s, Vec2i e) { return dijkstra(g, s, e); });
+
+        // A* runs last and becomes the displayed playback
+        auto result =
+            run_and_record([](const Grid& g, Vec2i s, Vec2i e) { return a_star(g, s, e); });
+        playback.start(std::move(result), grid);
+    }
+
+    ImGui::EndMenu();
+}
+
+void draw_playback_menu(Playback& playback, Grid& grid) {
+    if (!ImGui::BeginMenu("Playback")) {
+        return;
+    }
+
+    auto state = playback.state();
+
+    if (ImGui::MenuItem("Pause", "Space", false, state == PlaybackState::Playing)) {
         playback.pause();
     }
-    if (ImGui::MenuItem("Resume", nullptr, false, state == PlaybackState::Paused)) {
+    if (ImGui::MenuItem("Resume", "Space", false, state == PlaybackState::Paused)) {
         playback.resume();
     }
-    if (ImGui::MenuItem("Reset", nullptr, false, state != PlaybackState::Idle)) {
+    if (ImGui::MenuItem("Step Forward", ".", false, state == PlaybackState::Paused)) {
+        playback.step_forward(grid);
+    }
+    if (ImGui::MenuItem("Reset", "R", false, state != PlaybackState::Idle)) {
         playback.reset(grid);
     }
 
@@ -57,6 +99,8 @@ void draw_algorithm_menu(Playback& playback, Grid& grid) {
     if (ImGui::SliderInt("Speed", &speed, 1, 50)) {
         playback.set_speed(speed);
     }
+
+    ImGui::Text("Progress: %d / %d", playback.current_step(), playback.total_steps());
 
     ImGui::EndMenu();
 }
@@ -276,7 +320,7 @@ void draw_tools_menu(GridRenderer& renderer) {
     ImGui::EndMenu();
 }
 
-void draw(Grid& grid, GridRenderer& renderer, Playback& playback) {
+void draw(Grid& grid, GridRenderer& renderer, Playback& playback, AlgoHistory& history) {
     if (!ImGui::BeginMainMenuBar()) {
         return;
     }
@@ -285,12 +329,14 @@ void draw(Grid& grid, GridRenderer& renderer, Playback& playback) {
         if (ImGui::MenuItem("Clear Grid")) {
             playback.reset(grid);
             grid.clear();
+            history.clear();
         }
         ImGui::EndMenu();
     }
 
     draw_tools_menu(renderer);
-    draw_algorithm_menu(playback, grid);
+    draw_algorithm_menu(playback, grid, history);
+    draw_playback_menu(playback, grid);
     draw_maze_menu(playback, grid);
     draw_settings_menu(grid);
     draw_active_tool(renderer);

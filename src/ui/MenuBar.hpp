@@ -6,6 +6,6 @@
 
 namespace pathsim::menu_bar {
 
-void draw(Grid& grid, GridRenderer& renderer, Playback& playback);
+void draw(Grid& grid, GridRenderer& renderer, Playback& playback, AlgoHistory& history);
 
 } // namespace pathsim::menu_bar

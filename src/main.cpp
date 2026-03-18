@@ -1,6 +1,7 @@
 #include "algo/Playback.hpp"
 #include "core/Grid.hpp"
 #include "ui/GridRenderer.hpp"
+#include "ui/KeyboardShortcuts.hpp"
 #include "ui/MenuBar.hpp"
 #include "ui/StatsPanel.hpp"
 
@@ -25,6 +26,7 @@ struct AppState {
     pathsim::Grid grid;
     pathsim::GridRenderer renderer;
     pathsim::Playback playback;
+    pathsim::AlgoHistory history;
 
     AppState() : grid(40, 30) {}
 };
@@ -45,25 +47,9 @@ void main_loop(void* arg) {
                     app->playback.state() == pathsim::PlaybackState::Finished;
     app->renderer.handle_input(app->grid, can_edit);
 
-    pathsim::menu_bar::draw(app->grid, app->renderer, app->playback);
-    pathsim::stats_panel::draw(app->playback);
-
-    // Arrow keys for one-way directions
-    if (!ImGui::GetIO().WantCaptureKeyboard &&
-        app->renderer.active_tool() == pathsim::EditTool::OneWay) {
-        if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) {
-            app->renderer.set_direction_brush(pathsim::CellDirection::North);
-        }
-        if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) {
-            app->renderer.set_direction_brush(pathsim::CellDirection::South);
-        }
-        if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) {
-            app->renderer.set_direction_brush(pathsim::CellDirection::East);
-        }
-        if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow)) {
-            app->renderer.set_direction_brush(pathsim::CellDirection::West);
-        }
-    }
+    pathsim::menu_bar::draw(app->grid, app->renderer, app->playback, app->history);
+    pathsim::stats_panel::draw(app->playback, app->grid, app->history);
+    pathsim::keyboard_shortcuts::handle(app->grid, app->renderer, app->playback);
 
     ImGui::Render();
 

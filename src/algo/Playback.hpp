@@ -23,6 +23,9 @@ class Playback {
     // stop playback and clear path state from the grid
     void reset(Grid& grid);
 
+    // advance exactly one step while paused, stays in Paused state
+    void step_forward(Grid& grid);
+
     void set_speed(int steps_per_frame);
     [[nodiscard]] int speed() const;
 
@@ -39,7 +42,13 @@ class Playback {
     PathResult result_{};
     PlaybackState state_ = PlaybackState::Idle;
     int step_index_{};
-    int steps_per_frame_ = 1;
+    int steps_per_frame_{1};
+
+    // applies a single step to the grid and advances the index
+    void apply_step(Grid& grid);
+
+    // called when all steps have been applied, cleans up exploration cells
+    void finish_playback(Grid& grid);
 };
 
 } // namespace pathsim

@@ -27,7 +27,6 @@ void carve_maze(Grid& grid, float passage_rate, std::mt19937& rng) {
                static_cast<std::size_t>(p.x);
     };
 
-    // Start carving from (0, 0) — guaranteed even coordinates
     Vec2i origin{.x = 0, .y = 0};
     grid.set_wall(origin, false);
     carved[idx(origin)] = 1;
@@ -77,8 +76,6 @@ void carve_maze(Grid& grid, float passage_rate, std::mt19937& rng) {
         stack.push(chosen);
     }
 
-    // Connect end to the maze — end may be at odd coordinates (e.g. 39,29 on a 40x30 grid)
-    // Round down to nearest even coordinate to find the closest maze node
     Vec2i end_pos = grid.end();
     Vec2i nearest_node{.x = (end_pos.x / 2) * 2, .y = (end_pos.y / 2) * 2};
 

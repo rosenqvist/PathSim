@@ -50,11 +50,12 @@ if(EMSCRIPTEN)
     )
     target_compile_options(imgui_em PRIVATE -Wno-everything)
 
-    add_executable(PathSim
+   add_executable(PathSim
         src/main.cpp
         src/ui/GridRenderer.cpp
         src/ui/MenuBar.cpp
         src/ui/StatsPanel.cpp
+        src/ui/KeyboardShortcuts.cpp
     )
     target_compile_options(PathSim PRIVATE -Wall -Wextra -Wpedantic -Werror --use-port=contrib.glfw3)
     target_link_libraries(PathSim PRIVATE pathsim_core imgui_em)
@@ -85,6 +86,7 @@ else()
         src/ui/GridRenderer.cpp
         src/ui/MenuBar.cpp
         src/ui/StatsPanel.cpp
+        src/ui/KeyboardShortcuts.cpp
     )
     target_compile_options(PathSim PRIVATE
         -Wall -Wextra -Wpedantic -Werror

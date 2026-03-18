@@ -30,4 +30,15 @@ void record_path(PathResult& result, const std::unordered_map<Vec2i, Vec2i, Vec2
     result.path = std::move(path);
 }
 
+AlgoStats extract_stats(const PathResult& result) {
+    return {
+        .nodes_visited = result.nodes_visited,
+        .max_frontier_size = result.max_frontier_size,
+        .path_length = static_cast<int>(result.path.size()),
+        .path_cost = result.path_cost,
+        .compute_time_ms = result.compute_time_ms,
+        .algorithm_name = result.algorithm_name,
+    };
+}
+
 } // namespace pathsim::algo_utils

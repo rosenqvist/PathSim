@@ -1,9 +1,9 @@
 #include "Dijkstra.hpp"
 
-#include "algo/Dijkstra.hpp"
 #include "AlgoUtils.hpp"
 #include "core/Types.hpp"
 
+#include <algorithm>
 #include <queue>
 #include <unordered_map>
 #include <vector>
@@ -17,6 +17,7 @@ struct Node {
 
     bool operator>(const Node& other) const { return cost > other.cost; }
 };
+
 } // namespace
 
 PathResult dijkstra(const Grid& grid, Vec2i start, Vec2i end) {
@@ -63,6 +64,9 @@ PathResult dijkstra(const Grid& grid, Vec2i start, Vec2i end) {
                 }
             }
         }
+
+        int frontier_size = static_cast<int>(frontier.size());
+        result.max_frontier_size = std::max(frontier_size, result.max_frontier_size);
     }
 
     return result;

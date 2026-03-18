@@ -125,11 +125,6 @@ void Grid::set_weight(Vec2i pos, int weight) {
     weights_[index_at(pos)] = static_cast<uint8_t>(std::clamp(weight, 1, 9));
 }
 
-float Grid::move_cost(Vec2i pos) const {
-    assert(is_valid(pos));
-    return static_cast<float>(weights_[index_at(pos)]);
-}
-
 float Grid::move_cost(Vec2i from, Vec2i to) const {
     assert(is_valid(from));
     assert(is_valid(to));

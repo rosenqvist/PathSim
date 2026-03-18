@@ -35,7 +35,6 @@ class Grid {
     void set_impassable(Vec2i pos, bool impassable);
     [[nodiscard]] int weight(Vec2i pos) const;
     void set_weight(Vec2i pos, int weight);
-    [[nodiscard]] float move_cost(Vec2i pos) const;
 
     // start & end, enforcing exactly one of each
     [[nodiscard]] Vec2i start() const;

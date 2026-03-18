@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 #include <queue>
 #include <unordered_map>
 #include <vector>
@@ -24,13 +25,20 @@ struct Node {
         if (priority != other.priority) {
             return priority > other.priority;
         }
-        // Tie-break: prefer higher g-cost (closer to goal)
         return g_cost < other.g_cost;
     }
 };
 
-float manhattan_distance(Vec2i a, Vec2i b) {
-    return static_cast<float>(std::abs(a.x - b.x) + std::abs(a.y - b.y));
+float heuristic(Vec2i a, Vec2i b, bool diagonals) {
+    int dx = std::abs(a.x - b.x);
+    int dy = std::abs(a.y - b.y);
+
+    if (diagonals) {
+        int mn = std::min(dx, dy);
+        int mx = std::max(dx, dy);
+        return (static_cast<float>(mn) * std::numbers::sqrt2_v<float>)+static_cast<float>(mx - mn);
+    }
+    return static_cast<float>(dx + dy);
 }
 
 void record_path(PathResult& result, const std::unordered_map<Vec2i, Vec2i, Vec2iHash>& came_from,
@@ -73,6 +81,8 @@ PathResult a_star(const Grid& grid, Vec2i start, Vec2i end) {
     came_from[start] = start;
     cost_so_far[start] = 0.0F;
 
+    bool diag = grid.allow_diagonals();
+
     while (!frontier.empty()) {
         Node current = frontier.top();
         frontier.pop();
@@ -88,13 +98,13 @@ PathResult a_star(const Grid& grid, Vec2i start, Vec2i end) {
         }
 
         for (const auto& neighbor : grid.neighbors(current.pos)) {
-            float new_cost = cost_so_far[current.pos] + grid.move_cost(neighbor);
+            float new_cost = cost_so_far[current.pos] + grid.move_cost(current.pos, neighbor);
 
             if (!cost_so_far.contains(neighbor) || new_cost < cost_so_far[neighbor]) {
                 cost_so_far[neighbor] = new_cost;
                 came_from[neighbor] = current.pos;
 
-                float priority = new_cost + manhattan_distance(neighbor, end);
+                float priority = new_cost + heuristic(neighbor, end, diag);
                 frontier.push({.pos = neighbor, .priority = priority, .g_cost = new_cost});
 
                 if (neighbor != end) {

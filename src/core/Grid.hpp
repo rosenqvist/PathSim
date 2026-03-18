@@ -10,7 +10,7 @@
 namespace pathsim {
 
 struct Neighbors {
-    std::array<Vec2i, 4> data{};
+    std::array<Vec2i, 8> data{};
     int count{};
 
     [[nodiscard]] auto begin() const { return data.begin(); }
@@ -45,6 +45,12 @@ class Grid {
 
     // returns in-bounds non wall neighbors (4 directional)
     [[nodiscard]] Neighbors neighbors(Vec2i pos) const;
+    void set_allow_diagonals(bool allow);
+    [[nodiscard]] bool allow_diagonals() const;
+
+    // Returns sqrt(2) * weight for diagonal moves, weight for cardinal
+    // Cost of moving from one cell to an adjacent cell
+    [[nodiscard]] float move_cost(Vec2i from, Vec2i to) const;
 
     // Bounds check
     [[nodiscard]] bool is_valid(Vec2i pos) const;
@@ -68,6 +74,7 @@ class Grid {
     Vec2i start_{};
     Vec2i end_{};
     std::vector<Vec2i> waypoints_;
+    bool allow_diagonals_{false};
 
     // unchecked in release, asserted in debug, all access needs to go through here
     [[nodiscard]] int index_at(Vec2i pos) const;

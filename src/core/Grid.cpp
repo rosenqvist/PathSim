@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <numbers>
 
 namespace pathsim {
 Grid::Grid(int width, int height)
@@ -129,6 +130,19 @@ float Grid::move_cost(Vec2i pos) const {
     return static_cast<float>(weights_[index_at(pos)]);
 }
 
+float Grid::move_cost(Vec2i from, Vec2i to) const {
+    assert(is_valid(from));
+    assert(is_valid(to));
+
+    auto weight = static_cast<float>(weights_[index_at(to)]);
+    bool diagonal = (from.x != to.x) && (from.y != to.y);
+
+    if (diagonal) {
+        return weight * std::numbers::sqrt2_v<float>;
+    }
+    return weight;
+}
+
 Vec2i Grid::start() const {
     return start_;
 }
@@ -160,26 +174,64 @@ void Grid::set_end(Vec2i pos) {
 Neighbors Grid::neighbors(Vec2i pos) const {
     assert(is_valid(pos));
 
-    constexpr std::array<Vec2i, 4> kDirections{
+    constexpr std::array<Vec2i, 4> kCardinal{
         Vec2i{.x = 1, .y = 0},
         Vec2i{.x = 0, .y = 1},
         Vec2i{.x = -1, .y = 0},
         Vec2i{.x = 0, .y = -1},
+    };
 
+    constexpr std::array<Vec2i, 4> kDiagonal{
+        Vec2i{.x = 1, .y = 1},
+        Vec2i{.x = -1, .y = 1},
+        Vec2i{.x = -1, .y = -1},
+        Vec2i{.x = 1, .y = -1},
     };
 
     Neighbors result{};
 
-    for (const auto& dir : kDirections) {
+    // Cardinal directions
+    for (const auto& dir : kCardinal) {
         Vec2i neighbor{.x = pos.x + dir.x, .y = pos.y + dir.y};
-
         if (is_valid(neighbor) && !is_wall(neighbor)) {
             result.data.at(result.count) = neighbor;
             ++result.count;
         }
     }
 
+    if (!allow_diagonals_) {
+        return result;
+    }
+
+    // Diagonal directions with no corner cutting
+    for (const auto& dir : kDiagonal) {
+        Vec2i neighbor{.x = pos.x + dir.x, .y = pos.y + dir.y};
+
+        if (!is_valid(neighbor) || is_wall(neighbor)) {
+            continue;
+        }
+
+        // Both adjacent cardinal cells must be passable to prevent cutting through corners
+        Vec2i adj_x{.x = pos.x + dir.x, .y = pos.y};
+        Vec2i adj_y{.x = pos.x, .y = pos.y + dir.y};
+
+        if (is_wall(adj_x) || is_wall(adj_y)) {
+            continue;
+        }
+
+        result.data.at(result.count) = neighbor;
+        ++result.count;
+    }
+
     return result;
+}
+
+void Grid::set_allow_diagonals(bool allow) {
+    allow_diagonals_ = allow;
+}
+
+bool Grid::allow_diagonals() const {
+    return allow_diagonals_;
 }
 
 bool Grid::is_valid(Vec2i pos) const {

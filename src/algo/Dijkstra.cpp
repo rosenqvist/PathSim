@@ -83,7 +83,7 @@ PathResult dijkstra(const Grid& grid, Vec2i start, Vec2i end) {
         }
 
         for (const auto& neighbor : grid.neighbors(current.pos)) {
-            float new_cost = cost_so_far[current.pos] + grid.move_cost(neighbor);
+            float new_cost = cost_so_far[current.pos] + grid.move_cost(current.pos, neighbor);
 
             if (!cost_so_far.contains(neighbor) || new_cost < cost_so_far[neighbor]) {
                 cost_so_far[neighbor] = new_cost;

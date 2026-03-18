@@ -97,7 +97,7 @@ else()
     find_package(Catch2 3 CONFIG REQUIRED)
     enable_testing()
 
-    add_executable(pathsim_tests
+add_executable(pathsim_tests
     tests/grid_tests.cpp
     tests/bfs_tests.cpp
     tests/dijkstra_tests.cpp
@@ -106,6 +106,7 @@ else()
     tests/mazegen_tests.cpp
     tests/waypoint_tests.cpp
     tests/multipath_tests.cpp
+    tests/diagonal_tests.cpp
 )
     target_compile_options(pathsim_tests PRIVATE -Wall -Wextra)
     target_link_libraries(pathsim_tests

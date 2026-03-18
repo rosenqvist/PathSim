@@ -31,10 +31,8 @@ void record_path(PathResult& result, const std::unordered_map<Vec2i, Vec2i, Vec2
     std::ranges::reverse(path);
 
     float true_cost = 0.0F;
-    for (const auto& pos : path) {
-        if (pos != start) {
-            true_cost += grid.move_cost(pos);
-        }
+    for (std::size_t i = 1; i < path.size(); ++i) {
+        true_cost += grid.move_cost(path[i - 1], path[i]);
     }
     result.path_cost = true_cost;
 

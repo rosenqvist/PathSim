@@ -157,6 +157,19 @@ int main() {
 
 namespace menu_bar {
 
+void draw_settings_menu(pathsim::Grid& grid) {
+    if (!ImGui::BeginMenu("Settings")) {
+        return;
+    }
+
+    bool diag = grid.allow_diagonals();
+    if (ImGui::Checkbox("Allow Diagonal Moves", &diag)) {
+        grid.set_allow_diagonals(diag);
+    }
+
+    ImGui::EndMenu();
+}
+
 void draw_active_tool(const pathsim::GridRenderer& renderer) {
     const char* tool_name = nullptr;
     switch (renderer.active_tool()) {
@@ -373,6 +386,7 @@ void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer, pathsim::Playbac
 
     draw_algorithm_menu(playback, grid);
     draw_maze_menu(playback, grid);
+    draw_settings_menu(grid);
     draw_active_tool(renderer);
     draw_hover_info(grid, renderer);
 

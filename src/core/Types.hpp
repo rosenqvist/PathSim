@@ -45,4 +45,11 @@ struct PathResult {
     const char* algorithm_name = "None";
 };
 
+// hash for Vec2i so it can be used as an unordered_map key
+struct Vec2iHash {
+    std::size_t operator()(const Vec2i& v) const {
+        return std::hash<int>()(v.x) ^ (std::hash<int>()(v.y) << 16);
+    }
+};
+
 } // namespace pathsim

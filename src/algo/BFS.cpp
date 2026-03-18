@@ -8,14 +8,6 @@
 namespace pathsim {
 namespace {
 
-// hash for Vec2i so it can be used as an unordered_map key
-struct Vec2iHash {
-    std::size_t operator()(const Vec2i& v) const {
-        // combine x & y into a single hash with bit shifting
-        return std::hash<int>()(v.x) ^ (std::hash<int>()(v.y) << 16);
-    }
-};
-
 void record_path(PathResult& result, const std::unordered_map<Vec2i, Vec2i, Vec2iHash>& came_from,
                  const Grid& grid, Vec2i start, Vec2i end) {
 

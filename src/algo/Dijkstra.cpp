@@ -11,12 +11,6 @@
 namespace pathsim {
 namespace {
 
-struct Vec2iHash {
-    std::size_t operator()(const Vec2i& v) const {
-        return std::hash<int>()(v.x) ^ (std::hash<int>()(v.y) << 16);
-    }
-};
-
 struct Node {
     Vec2i pos{};
     float cost{};

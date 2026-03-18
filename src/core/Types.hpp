@@ -27,6 +27,14 @@ enum class CellState : uint8_t {
     Waypoint,
 };
 
+enum class CellDirection : uint8_t {
+    None,
+    North,
+    South,
+    East,
+    West,
+};
+
 // for recording algo steps
 struct AlgoStep {
     Vec2i position{};

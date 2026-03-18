@@ -154,6 +154,33 @@ void draw_active_tool(const GridRenderer& renderer) {
     case EditTool::Impassable:
         tool_name = "Impassable";
         break;
+    case EditTool::OneWay: {
+        const char* dir_name = "East";
+        switch (renderer.direction_brush()) {
+        case CellDirection::North:
+            dir_name = "North";
+            break;
+        case CellDirection::South:
+            dir_name = "South";
+            break;
+        case CellDirection::East:
+            dir_name = "East";
+            break;
+        case CellDirection::West:
+            dir_name = "West";
+            break;
+        case CellDirection::None:
+            dir_name = "None";
+            break;
+        }
+        std::array<char, 32> label{};
+        std::snprintf(label.data(), label.size(), "Tool: One-Way (%s)", dir_name);
+        float text_w = ImGui::CalcTextSize(label.data()).x;
+        float bar_w = ImGui::GetMainViewport()->Size.x;
+        ImGui::SameLine((bar_w - text_w) * 0.5F);
+        ImGui::TextColored(ImVec4(1.0F, 1.0F, 1.0F, 0.9F), "%s", label.data());
+        return;
+    }
     }
 
     std::array<char, 32> label{};
@@ -190,6 +217,65 @@ void draw_hover_info(const Grid& grid, const GridRenderer& renderer) {
 
 } // namespace
 
+void draw_tools_menu(GridRenderer& renderer) {
+    if (!ImGui::BeginMenu("Tools")) {
+        return;
+    }
+
+    auto tool = renderer.active_tool();
+    if (ImGui::MenuItem("Wall", nullptr, tool == EditTool::Wall)) {
+        renderer.set_tool(EditTool::Wall);
+    }
+    if (ImGui::MenuItem("Start", nullptr, tool == EditTool::Start)) {
+        renderer.set_tool(EditTool::Start);
+    }
+    if (ImGui::MenuItem("Impassable", nullptr, tool == EditTool::Impassable)) {
+        renderer.set_tool(EditTool::Impassable);
+    }
+    if (ImGui::MenuItem("One-Way", nullptr, tool == EditTool::OneWay)) {
+        renderer.set_tool(EditTool::OneWay);
+    }
+    if (ImGui::MenuItem("Waypoint", nullptr, tool == EditTool::Waypoint)) {
+        renderer.set_tool(EditTool::Waypoint);
+    }
+    if (ImGui::MenuItem("End", nullptr, tool == EditTool::End)) {
+        renderer.set_tool(EditTool::End);
+    }
+    if (ImGui::MenuItem("Erase", nullptr, tool == EditTool::Erase)) {
+        renderer.set_tool(EditTool::Erase);
+    }
+    ImGui::Separator();
+
+    if (ImGui::MenuItem("Weight Brush", nullptr, tool == EditTool::Weight)) {
+        renderer.set_tool(EditTool::Weight);
+    }
+
+    if (tool == EditTool::Weight) {
+        int weight = renderer.weight_brush();
+        if (ImGui::SliderInt("Weight", &weight, 1, 9)) {
+            renderer.set_weight_brush(weight);
+        }
+    }
+
+    if (tool == EditTool::OneWay) {
+        auto dir = renderer.direction_brush();
+        if (ImGui::MenuItem("North", nullptr, dir == CellDirection::North)) {
+            renderer.set_direction_brush(CellDirection::North);
+        }
+        if (ImGui::MenuItem("South", nullptr, dir == CellDirection::South)) {
+            renderer.set_direction_brush(CellDirection::South);
+        }
+        if (ImGui::MenuItem("East", nullptr, dir == CellDirection::East)) {
+            renderer.set_direction_brush(CellDirection::East);
+        }
+        if (ImGui::MenuItem("West", nullptr, dir == CellDirection::West)) {
+            renderer.set_direction_brush(CellDirection::West);
+        }
+    }
+
+    ImGui::EndMenu();
+}
+
 void draw(Grid& grid, GridRenderer& renderer, Playback& playback) {
     if (!ImGui::BeginMainMenuBar()) {
         return;
@@ -203,41 +289,7 @@ void draw(Grid& grid, GridRenderer& renderer, Playback& playback) {
         ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("Tools")) {
-        auto tool = renderer.active_tool();
-        if (ImGui::MenuItem("Wall", nullptr, tool == EditTool::Wall)) {
-            renderer.set_tool(EditTool::Wall);
-        }
-        if (ImGui::MenuItem("Start", nullptr, tool == EditTool::Start)) {
-            renderer.set_tool(EditTool::Start);
-        }
-        if (ImGui::MenuItem("Impassable", nullptr, tool == EditTool::Impassable)) {
-            renderer.set_tool(EditTool::Impassable);
-        }
-        if (ImGui::MenuItem("Waypoint", nullptr, tool == EditTool::Waypoint)) {
-            renderer.set_tool(EditTool::Waypoint);
-        }
-        if (ImGui::MenuItem("End", nullptr, tool == EditTool::End)) {
-            renderer.set_tool(EditTool::End);
-        }
-        if (ImGui::MenuItem("Erase", nullptr, tool == EditTool::Erase)) {
-            renderer.set_tool(EditTool::Erase);
-        }
-        ImGui::Separator();
-
-        if (ImGui::MenuItem("Weight Brush", nullptr, tool == EditTool::Weight)) {
-            renderer.set_tool(EditTool::Weight);
-        }
-
-        if (tool == EditTool::Weight) {
-            int weight = renderer.weight_brush();
-            if (ImGui::SliderInt("Weight", &weight, 1, 9)) {
-                renderer.set_weight_brush(weight);
-            }
-        }
-        ImGui::EndMenu();
-    }
-
+    draw_tools_menu(renderer);
     draw_algorithm_menu(playback, grid);
     draw_maze_menu(playback, grid);
     draw_settings_menu(grid);
@@ -246,5 +298,4 @@ void draw(Grid& grid, GridRenderer& renderer, Playback& playback) {
 
     ImGui::EndMainMenuBar();
 }
-
 } // namespace pathsim::menu_bar

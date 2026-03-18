@@ -105,6 +105,10 @@ void GridRenderer::draw(const Grid& grid) {
             if (grid.at(cell) == CellState::Waypoint) {
                 draw_waypoint(draw_list, grid, cell, x_min, y_min);
             }
+            if (grid.direction(cell) != CellDirection::None) {
+                draw_direction_arrow(draw_list, grid.direction(cell), ImVec2{x_min, y_min},
+                                     ImVec2{x_max, y_max});
+            }
         }
     }
 
@@ -151,10 +155,15 @@ void GridRenderer::handle_input(Grid& grid, bool editing_enabled) {
 
     // Begin drag if mouse just clicked on start or end
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-        if (mouse_pos == grid.start()) {
-            drag_target_ = DragTarget::Start;
-        } else if (mouse_pos == grid.end()) {
-            drag_target_ = DragTarget::End;
+        bool drag_tools = active_tool_ == EditTool::Wall || active_tool_ == EditTool::Start ||
+                          active_tool_ == EditTool::End || active_tool_ == EditTool::Erase;
+
+        if (drag_tools) {
+            if (mouse_pos == grid.start()) {
+                drag_target_ = DragTarget::Start;
+            } else if (mouse_pos == grid.end()) {
+                drag_target_ = DragTarget::End;
+            }
         }
     }
 
@@ -194,6 +203,9 @@ void GridRenderer::handle_input(Grid& grid, bool editing_enabled) {
         case EditTool::Impassable:
             grid.set_impassable(mouse_pos, true);
             break;
+        case EditTool::OneWay:
+            grid.set_direction(mouse_pos, active_direction_);
+            break;
         }
     }
 
@@ -203,7 +215,49 @@ void GridRenderer::handle_input(Grid& grid, bool editing_enabled) {
         grid.set_weight(mouse_pos, 1);
         grid.remove_waypoint(mouse_pos);
         grid.set_impassable(mouse_pos, false);
+        grid.set_direction(mouse_pos, CellDirection::None);
     }
+}
+
+void GridRenderer::draw_direction_arrow(ImDrawList* draw_list, CellDirection dir, ImVec2 top_left,
+                                        ImVec2 bottom_right) {
+    float cx = (top_left.x + bottom_right.x) * 0.5F;
+    float cy = (top_left.y + bottom_right.y) * 0.5F;
+    float hw = (bottom_right.x - top_left.x) * 0.3F;
+    float hh = (bottom_right.y - top_left.y) * 0.3F;
+
+    ImU32 col = IM_COL32(255, 255, 255, 200);
+
+    ImVec2 tip;
+    ImVec2 left;
+    ImVec2 right;
+
+    switch (dir) {
+    case CellDirection::North:
+        tip = {cx, cy - hh};
+        left = {cx - hw, cy + hh};
+        right = {cx + hw, cy + hh};
+        break;
+    case CellDirection::South:
+        tip = {cx, cy + hh};
+        left = {cx + hw, cy - hh};
+        right = {cx - hw, cy - hh};
+        break;
+    case CellDirection::East:
+        tip = {cx + hw, cy};
+        left = {cx - hw, cy - hh};
+        right = {cx - hw, cy + hh};
+        break;
+    case CellDirection::West:
+        tip = {cx - hw, cy};
+        left = {cx + hw, cy + hh};
+        right = {cx + hw, cy - hh};
+        break;
+    case CellDirection::None:
+        return;
+    }
+
+    draw_list->AddTriangleFilled(tip, left, right, col);
 }
 
 Vec2i GridRenderer::screen_to_grid(ImVec2 screen_pos) const {
@@ -234,6 +288,14 @@ Vec2i GridRenderer::hovered_cell() const {
 
 bool GridRenderer::has_hovered_cell() const {
     return has_hover_;
+}
+
+void GridRenderer::set_direction_brush(CellDirection dir) {
+    active_direction_ = dir;
+}
+
+CellDirection GridRenderer::direction_brush() const {
+    return active_direction_;
 }
 
 ImU32 GridRenderer::cell_color(CellState state, int weight) {

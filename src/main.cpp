@@ -48,6 +48,23 @@ void main_loop(void* arg) {
     pathsim::menu_bar::draw(app->grid, app->renderer, app->playback);
     pathsim::stats_panel::draw(app->playback);
 
+    // Arrow keys for one-way directions
+    if (!ImGui::GetIO().WantCaptureKeyboard &&
+        app->renderer.active_tool() == pathsim::EditTool::OneWay) {
+        if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) {
+            app->renderer.set_direction_brush(pathsim::CellDirection::North);
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) {
+            app->renderer.set_direction_brush(pathsim::CellDirection::South);
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) {
+            app->renderer.set_direction_brush(pathsim::CellDirection::East);
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow)) {
+            app->renderer.set_direction_brush(pathsim::CellDirection::West);
+        }
+    }
+
     ImGui::Render();
 
     int w{};

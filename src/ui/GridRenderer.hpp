@@ -9,7 +9,16 @@
 
 namespace pathsim {
 
-enum class EditTool : std::uint8_t { Wall, Start, End, Erase, Weight, Waypoint, Impassable };
+enum class EditTool : std::uint8_t {
+    Wall,
+    Start,
+    End,
+    Erase,
+    Weight,
+    Waypoint,
+    Impassable,
+    OneWay
+};
 
 enum class DragTarget : std::uint8_t { None, Start, End };
 
@@ -27,6 +36,9 @@ class GridRenderer {
 
     [[nodiscard]] Vec2i hovered_cell() const;
     [[nodiscard]] bool has_hovered_cell() const;
+
+    void set_direction_brush(CellDirection dir);
+    [[nodiscard]] CellDirection direction_brush() const;
 
   private:
     // Converts a cellstate to a display color
@@ -53,6 +65,10 @@ class GridRenderer {
                          float y_max) const;
     void draw_waypoint(ImDrawList* draw_list, const Grid& grid, Vec2i cell, float x_min,
                        float y_min) const;
+    static void draw_direction_arrow(ImDrawList* draw_list, CellDirection dir, ImVec2 top_left,
+                                     ImVec2 bottom_right);
+
+    CellDirection active_direction_ = CellDirection::East;
 };
 
 } // namespace pathsim

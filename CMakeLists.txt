@@ -117,6 +117,7 @@ add_executable(pathsim_tests
     tests/waypoint_tests.cpp
     tests/multipath_tests.cpp
     tests/diagonal_tests.cpp
+    tests/oneway_tests.cpp
 )
     target_compile_options(pathsim_tests PRIVATE -Wall -Wextra)
     target_link_libraries(pathsim_tests

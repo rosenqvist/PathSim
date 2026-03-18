@@ -13,7 +13,8 @@ Grid::Grid(int width, int height)
       cells_(static_cast<std::size_t>(width * height), CellState::Empty),
       walls_(static_cast<std::size_t>(width * height), 0),
       weights_(static_cast<std::size_t>(width * height), 1), start_{.x = 0, .y = 0},
-      end_{.x = width - 1, .y = height - 1} {
+      end_{.x = width - 1, .y = height - 1},
+      directions_(static_cast<std::size_t>(width * height), CellDirection::None) {
     assert(width > 0);
     assert(height > 0);
 
@@ -44,7 +45,6 @@ bool Grid::is_wall(Vec2i pos) const {
 void Grid::set_wall(Vec2i pos, bool wall) {
     assert(is_valid(pos));
 
-    // prevent walling over start or end
     if (pos == start_ || pos == end_) {
         return;
     }
@@ -54,6 +54,7 @@ void Grid::set_wall(Vec2i pos, bool wall) {
 
     if (wall) {
         weights_[index_at(pos)] = 1;
+        directions_[index_at(pos)] = CellDirection::None;
     }
 }
 
@@ -68,6 +69,7 @@ void Grid::set_impassable(Vec2i pos, bool impassable) {
         walls_[index_at(pos)] = 0U;
         cells_[index_at(pos)] = CellState::Impassable;
         weights_[index_at(pos)] = 1;
+        directions_[index_at(pos)] = CellDirection::None;
     } else if (cells_[index_at(pos)] == CellState::Impassable) {
         cells_[index_at(pos)] = CellState::Empty;
     }
@@ -108,6 +110,19 @@ void Grid::clear_waypoints() {
         }
     }
     waypoints_.clear();
+}
+
+CellDirection Grid::direction(Vec2i pos) const {
+    assert(is_valid(pos));
+    return directions_[index_at(pos)];
+}
+
+void Grid::set_direction(Vec2i pos, CellDirection dir) {
+    assert(is_valid(pos));
+    if (is_wall(pos)) {
+        return;
+    }
+    directions_[index_at(pos)] = dir;
 }
 
 int Grid::weight(Vec2i pos) const {
@@ -176,6 +191,13 @@ Neighbors Grid::neighbors(Vec2i pos) const {
         Vec2i{.x = 0, .y = -1},
     };
 
+    constexpr std::array<CellDirection, 4> kMoveDir{
+        CellDirection::East,
+        CellDirection::South,
+        CellDirection::West,
+        CellDirection::North,
+    };
+
     constexpr std::array<Vec2i, 4> kDiagonal{
         Vec2i{.x = 1, .y = 1},
         Vec2i{.x = -1, .y = 1},
@@ -186,19 +208,36 @@ Neighbors Grid::neighbors(Vec2i pos) const {
     Neighbors result{};
 
     // Cardinal directions
-    for (const auto& dir : kCardinal) {
-        Vec2i neighbor{.x = pos.x + dir.x, .y = pos.y + dir.y};
-        if (is_valid(neighbor) && !is_wall(neighbor)) {
-            result.data.at(result.count) = neighbor;
-            ++result.count;
+    for (std::size_t i = 0; i < kCardinal.size(); ++i) {
+        Vec2i neighbor{.x = pos.x + kCardinal.at(i).x, .y = pos.y + kCardinal.at(i).y};
+
+        if (!is_valid(neighbor) || is_wall(neighbor)) {
+            continue;
         }
+
+        CellDirection our_dir = directions_.at(index_at(pos));
+        if (our_dir != CellDirection::None && our_dir != kMoveDir.at(i)) {
+            continue;
+        }
+
+        CellDirection their_dir = directions_.at(index_at(neighbor));
+        if (their_dir != CellDirection::None && their_dir != kMoveDir.at(i)) {
+            continue;
+        }
+
+        result.data.at(result.count) = neighbor;
+        ++result.count;
     }
 
     if (!allow_diagonals_) {
         return result;
     }
 
-    // Diagonal directions with no corner cutting
+    // If current cell has a direction constraint, no diagonal exits
+    if (directions_.at(index_at(pos)) != CellDirection::None) {
+        return result;
+    }
+
     for (const auto& dir : kDiagonal) {
         Vec2i neighbor{.x = pos.x + dir.x, .y = pos.y + dir.y};
 
@@ -206,7 +245,11 @@ Neighbors Grid::neighbors(Vec2i pos) const {
             continue;
         }
 
-        // Both adjacent cardinal cells must be passable to prevent cutting through corners
+        // Can't diagonally enter a one-way cell
+        if (directions_.at(index_at(neighbor)) != CellDirection::None) {
+            continue;
+        }
+
         Vec2i adj_x{.x = pos.x + dir.x, .y = pos.y};
         Vec2i adj_y{.x = pos.x, .y = pos.y + dir.y};
 
@@ -250,6 +293,7 @@ void Grid::clear() {
     std::ranges::fill(cells_, CellState::Empty);
     std::ranges::fill(walls_, 0);
     std::ranges::fill(weights_, 1);
+    std::ranges::fill(directions_, CellDirection::None);
     clear_waypoints();
 
     start_ = {.x = 0, .y = 0};

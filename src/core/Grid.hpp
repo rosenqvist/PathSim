@@ -36,6 +36,10 @@ class Grid {
     [[nodiscard]] int weight(Vec2i pos) const;
     void set_weight(Vec2i pos, int weight);
 
+    // cell directions for one-way cells
+    [[nodiscard]] CellDirection direction(Vec2i pos) const;
+    void set_direction(Vec2i pos, CellDirection dir);
+
     // start & end, enforcing exactly one of each
     [[nodiscard]] Vec2i start() const;
     [[nodiscard]] Vec2i end() const;
@@ -74,6 +78,7 @@ class Grid {
     Vec2i end_{};
     std::vector<Vec2i> waypoints_;
     bool allow_diagonals_{false};
+    std::vector<CellDirection> directions_;
 
     // unchecked in release, asserted in debug, all access needs to go through here
     [[nodiscard]] int index_at(Vec2i pos) const;

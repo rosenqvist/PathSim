@@ -81,6 +81,10 @@ PathResult a_star(const Grid& grid, Vec2i start, Vec2i end) {
         Node current = frontier.top();
         frontier.pop();
 
+        if (cost_so_far.contains(current.pos) && current.g_cost > cost_so_far[current.pos]) {
+            continue;
+        }
+
         if (current.pos != start && current.pos != end) {
             result.steps.push_back({.position = current.pos, .new_state = CellState::Visited});
         }

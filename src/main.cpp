@@ -4,6 +4,7 @@
 #include "ui/KeyboardShortcuts.hpp"
 #include "ui/MenuBar.hpp"
 #include "ui/StatsPanel.hpp"
+#include "ui/ViewSettings.hpp"
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -27,6 +28,7 @@ struct AppState {
     pathsim::GridRenderer renderer;
     pathsim::Playback playback;
     pathsim::AlgoHistory history;
+    pathsim::ViewSettings view;
 
     AppState() : grid(40, 30) {}
 };
@@ -41,14 +43,20 @@ void main_loop(void* arg) {
     ImGui::NewFrame();
 
     app->playback.update(app->grid);
-    app->renderer.draw(app->grid);
+
+    if (app->playback.state() == pathsim::PlaybackState::Finished) {
+        app->renderer.draw(app->grid, app->view, &app->playback.result());
+    } else {
+        app->renderer.draw(app->grid, app->view);
+    }
 
     bool can_edit = app->playback.state() == pathsim::PlaybackState::Idle ||
                     app->playback.state() == pathsim::PlaybackState::Finished;
     app->renderer.handle_input(app->grid, can_edit);
 
-    pathsim::menu_bar::draw(app->grid, app->renderer, app->playback, app->history);
+    pathsim::menu_bar::draw(app->grid, app->renderer, app->playback, app->history, app->view);
     pathsim::stats_panel::draw(app->playback, app->grid, app->history);
+
     pathsim::keyboard_shortcuts::handle(app->grid, app->renderer, app->playback);
 
     ImGui::Render();

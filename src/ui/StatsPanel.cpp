@@ -30,15 +30,15 @@ void draw_controls(Playback& playback, Grid& grid) {
     auto state = playback.state();
 
     if (state == PlaybackState::Playing) {
-        if (ImGui::Button("Pause")) {
+        if (ImGui::Button("Pause [Space]")) {
             playback.pause();
         }
     } else if (state == PlaybackState::Paused) {
-        if (ImGui::Button("Resume")) {
+        if (ImGui::Button("Resume [Space]")) {
             playback.resume();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Step")) {
+        if (ImGui::Button("Step [.]")) {
             playback.step_forward(grid);
         }
     }
@@ -47,7 +47,7 @@ void draw_controls(Playback& playback, Grid& grid) {
         if (state == PlaybackState::Playing || state == PlaybackState::Paused) {
             ImGui::SameLine();
         }
-        if (ImGui::Button("Reset")) {
+        if (ImGui::Button("Reset [R]")) {
             playback.reset(grid);
         }
     }
@@ -139,6 +139,61 @@ void draw_comparison(const PathResult& current, const AlgoHistory& history) {
     }
 }
 
+void draw_copy_button(const PathResult& result, const AlgoHistory& history) {
+    if (!ImGui::Button("Copy Stats")) {
+        return;
+    }
+
+    std::string stats;
+    stats += std::string(result.algorithm_name) + "\n";
+    stats += "Nodes explored: " + std::to_string(result.nodes_visited) + "\n";
+    stats += "Peak frontier: " + std::to_string(result.max_frontier_size) + "\n";
+    stats +=
+        "Path length: " + std::to_string(static_cast<int>(result.path.size()) - 1) + " steps\n";
+    stats += "Path cost: " + std::to_string(result.path_cost) + "\n";
+
+    std::array<char, 32> time_buf{};
+    std::snprintf(time_buf.data(), time_buf.size(), "%.2f",
+                  static_cast<double>(result.compute_time_ms));
+    stats += "Compute time: " + std::string(time_buf.data()) + " ms\n";
+
+    for (const auto& [name, cmp] : history) {
+        if (name == result.algorithm_name) {
+            continue;
+        }
+
+        stats += "\n" + std::string(cmp.algorithm_name) + "\n";
+        stats += "  Nodes explored: " + std::to_string(cmp.nodes_visited) + "\n";
+        stats += "  Peak frontier: " + std::to_string(cmp.max_frontier_size) + "\n";
+        stats += "  Path length: " + std::to_string(cmp.path_length - 1) + " steps\n";
+        stats += "  Path cost: " + std::to_string(cmp.path_cost) + "\n";
+
+        std::array<char, 32> cmp_time{};
+        std::snprintf(cmp_time.data(), cmp_time.size(), "%.2f",
+                      static_cast<double>(cmp.compute_time_ms));
+        stats += "  Compute time: " + std::string(cmp_time.data()) + " ms\n";
+
+        if (!result.path.empty() && cmp.path_length > 0) {
+            float cost_diff = cmp.path_cost - result.path_cost;
+            if (cost_diff > 0.1F) {
+                float pct = (cost_diff / result.path_cost) * 100.0F;
+                std::array<char, 32> pct_buf{};
+                std::snprintf(pct_buf.data(), pct_buf.size(), "+%.0f%%", static_cast<double>(pct));
+                stats += "  " + std::string(pct_buf.data()) + " more expensive\n";
+            } else if (cost_diff < -0.1F) {
+                float pct = (-cost_diff / cmp.path_cost) * 100.0F;
+                std::array<char, 32> pct_buf{};
+                std::snprintf(pct_buf.data(), pct_buf.size(), "%.0f%%", static_cast<double>(pct));
+                stats += "  " + std::string(pct_buf.data()) + " cheaper\n";
+            } else {
+                stats += "  Same cost\n";
+            }
+        }
+    }
+
+    ImGui::SetClipboardText(stats.c_str());
+}
+
 } // namespace
 
 void draw(Playback& playback, Grid& grid, AlgoHistory& history) {
@@ -192,23 +247,7 @@ void draw(Playback& playback, Grid& grid, AlgoHistory& history) {
         draw_comparison(result, history);
 
         ImGui::Separator();
-
-        if (ImGui::Button("Copy Stats")) {
-            std::string stats;
-            stats += std::string(result.algorithm_name) + "\n";
-            stats += "Nodes explored: " + std::to_string(result.nodes_visited) + "\n";
-            stats += "Peak frontier: " + std::to_string(result.max_frontier_size) + "\n";
-            stats += "Path length: " + std::to_string(static_cast<int>(result.path.size()) - 1) +
-                     " steps\n";
-            stats += "Path cost: " + std::to_string(result.path_cost) + "\n";
-
-            std::array<char, 32> time_buf{};
-            std::snprintf(time_buf.data(), time_buf.size(), "%.2f",
-                          static_cast<double>(result.compute_time_ms));
-            stats += "Compute time: " + std::string(time_buf.data()) + " ms\n";
-
-            ImGui::SetClipboardText(stats.c_str());
-        }
+        draw_copy_button(result, history);
     }
 
     ImGui::End();

@@ -2,6 +2,7 @@
 
 #include "../core/Grid.hpp"
 #include "core/Types.hpp"
+#include "ViewSettings.hpp"
 
 #include <imgui.h>
 
@@ -24,8 +25,8 @@ enum class DragTarget : std::uint8_t { None, Start, End };
 
 class GridRenderer {
   public:
-    // Draw the grid in an imgui window. called each frame
-    void draw(const Grid& grid);
+    void draw(const Grid& grid, const ViewSettings& view = {},
+              const PathResult* finished_result = nullptr);
     void handle_input(Grid& grid, bool editing_enabled = true);
 
     void set_tool(EditTool tool);
@@ -41,10 +42,9 @@ class GridRenderer {
     [[nodiscard]] CellDirection direction_brush() const;
 
   private:
-    // Converts a cellstate to a display color
     static ImU32 cell_color(CellState state, int weight = 1);
+    static ImU32 heatmap_color(float t);
 
-    // Converts screen coordinates to grid position. Used for dragging start/end
     [[nodiscard]] Vec2i screen_to_grid(ImVec2 screen_pos) const;
 
     EditTool active_tool_ = EditTool::Wall;
@@ -67,6 +67,12 @@ class GridRenderer {
                        float y_min) const;
     static void draw_direction_arrow(ImDrawList* draw_list, CellDirection dir, ImVec2 top_left,
                                      ImVec2 bottom_right);
+    void draw_start_marker(ImDrawList* draw_list, ImVec2 top_left, ImVec2 bottom_right) const;
+    void draw_end_marker(ImDrawList* draw_list, ImVec2 top_left, ImVec2 bottom_right) const;
+    void draw_cell_overlays(ImDrawList* draw_list, const Grid& grid, Vec2i cell, float x_min,
+                            float y_min, float x_max, float y_max) const;
+    void draw_path_overlay(ImDrawList* draw_list, const std::vector<Vec2i>& path,
+                           bool show_arrows) const;
 
     CellDirection active_direction_ = CellDirection::East;
 };

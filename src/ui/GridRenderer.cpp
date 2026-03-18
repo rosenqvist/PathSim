@@ -61,7 +61,63 @@ void GridRenderer::draw_waypoint(ImDrawList* draw_list, const Grid& grid, Vec2i 
     }
 }
 
-void GridRenderer::draw(const Grid& grid) {
+void GridRenderer::draw_start_marker(ImDrawList* draw_list, ImVec2 top_left,
+                                     ImVec2 bottom_right) const {
+    float cx = (top_left.x + bottom_right.x) * 0.5F;
+    float cy = (top_left.y + bottom_right.y) * 0.5F;
+    float radius = std::min(cell_w_, cell_h_) * 0.35F;
+
+    draw_list->AddCircleFilled(ImVec2{cx, cy}, radius, IM_COL32(0, 200, 80, 255));
+    draw_list->AddCircle(ImVec2{cx, cy}, radius, IM_COL32(255, 255, 255, 180), 0, 2.0F);
+
+    const char* label = "S";
+    ImVec2 text_size = ImGui::CalcTextSize(label);
+    draw_list->AddText(ImVec2{cx - (text_size.x * 0.5F), cy - (text_size.y * 0.5F)},
+                       IM_COL32(255, 255, 255, 240), label);
+}
+
+void GridRenderer::draw_end_marker(ImDrawList* draw_list, ImVec2 top_left,
+                                   ImVec2 bottom_right) const {
+    float cx = (top_left.x + bottom_right.x) * 0.5F;
+    float cy = (top_left.y + bottom_right.y) * 0.5F;
+    float radius = std::min(cell_w_, cell_h_) * 0.35F;
+
+    draw_list->AddCircleFilled(ImVec2{cx, cy}, radius, IM_COL32(220, 50, 50, 255));
+    draw_list->AddCircle(ImVec2{cx, cy}, radius, IM_COL32(255, 255, 255, 180), 0, 2.0F);
+
+    const char* label = "E";
+    ImVec2 text_size = ImGui::CalcTextSize(label);
+    draw_list->AddText(ImVec2{cx - (text_size.x * 0.5F), cy - (text_size.y * 0.5F)},
+                       IM_COL32(255, 255, 255, 240), label);
+}
+
+void GridRenderer::draw_cell_overlays(ImDrawList* draw_list, const Grid& grid, Vec2i cell,
+                                      float x_min, float y_min, float x_max, float y_max) const {
+    CellState state = grid.at(cell);
+
+    if (state == CellState::Start) {
+        draw_start_marker(draw_list, {x_min, y_min}, {x_max, y_max});
+    }
+    if (state == CellState::End) {
+        draw_end_marker(draw_list, {x_min, y_min}, {x_max, y_max});
+    }
+    if (grid.weight(cell) > 1 && state == CellState::Empty) {
+        draw_weight_label(draw_list, grid, cell, x_min, y_min);
+    }
+    if (state == CellState::Impassable) {
+        draw_impassable(draw_list, x_min, y_min, x_max, y_max);
+    }
+    if (state == CellState::Waypoint) {
+        draw_waypoint(draw_list, grid, cell, x_min, y_min);
+    }
+    if (grid.direction(cell) != CellDirection::None) {
+        draw_direction_arrow(draw_list, grid.direction(cell), ImVec2{x_min, y_min},
+                             ImVec2{x_max, y_max});
+    }
+}
+
+void GridRenderer::draw(const Grid& grid, const ViewSettings& view,
+                        const PathResult* finished_result) {
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
     ImGui::SetNextWindowSize(viewport->WorkSize);
@@ -83,6 +139,21 @@ void GridRenderer::draw(const Grid& grid) {
 
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
+    // Build heatmap lookup if enabled and playback is finished
+    std::vector<int> visit_order(
+        static_cast<std::size_t>(grid.width()) * static_cast<std::size_t>(grid.height()), -1);
+    int total_visited = 0;
+
+    if (view.show_heatmap && finished_result != nullptr) {
+        for (const auto& step : finished_result->steps) {
+            if (step.new_state == CellState::Visited) {
+                int idx = (step.position.y * grid.width()) + step.position.x;
+                visit_order[static_cast<std::size_t>(idx)] = total_visited;
+                ++total_visited;
+            }
+        }
+    }
+
     for (int row = 0; row < grid.height(); ++row) {
         for (int col = 0; col < grid.width(); ++col) {
             Vec2i cell{.x = col, .y = row};
@@ -92,24 +163,27 @@ void GridRenderer::draw(const Grid& grid) {
             float x_max = x_min + cell_w_;
             float y_max = y_min + cell_h_;
 
-            draw_list->AddRectFilled({x_min, y_min}, {x_max, y_max},
-                                     cell_color(grid.at(cell), grid.weight(cell)));
+            // Heatmap overrides cell color for visited cells
+            int idx = (row * grid.width()) + col;
+            ImU32 fill = 0;
+            if (total_visited > 0 && visit_order[static_cast<std::size_t>(idx)] >= 0) {
+                float t = static_cast<float>(visit_order[static_cast<std::size_t>(idx)]) /
+                          static_cast<float>(std::max(1, total_visited - 1));
+                fill = heatmap_color(t);
+            } else {
+                fill = cell_color(grid.at(cell), grid.weight(cell));
+            }
+
+            draw_list->AddRectFilled({x_min, y_min}, {x_max, y_max}, fill);
             draw_list->AddRect({x_min, y_min}, {x_max, y_max}, IM_COL32(40, 40, 40, 255));
 
-            if (grid.weight(cell) > 1 && grid.at(cell) == CellState::Empty) {
-                draw_weight_label(draw_list, grid, cell, x_min, y_min);
-            }
-            if (grid.at(cell) == CellState::Impassable) {
-                draw_impassable(draw_list, x_min, y_min, x_max, y_max);
-            }
-            if (grid.at(cell) == CellState::Waypoint) {
-                draw_waypoint(draw_list, grid, cell, x_min, y_min);
-            }
-            if (grid.direction(cell) != CellDirection::None) {
-                draw_direction_arrow(draw_list, grid.direction(cell), ImVec2{x_min, y_min},
-                                     ImVec2{x_max, y_max});
-            }
+            draw_cell_overlays(draw_list, grid, cell, x_min, y_min, x_max, y_max);
         }
+    }
+
+    // Path overlay
+    if (finished_result != nullptr && !finished_result->path.empty()) {
+        draw_path_overlay(draw_list, finished_result->path, view.show_path_direction);
     }
 
     // Hover highlight
@@ -134,6 +208,76 @@ void GridRenderer::draw(const Grid& grid) {
 
     ImGui::Dummy(available);
     ImGui::End();
+}
+
+void GridRenderer::draw_path_overlay(ImDrawList* draw_list, const std::vector<Vec2i>& path,
+                                     bool show_arrows) const {
+    if (path.size() < 2 || cell_w_ <= 0.0F || cell_h_ <= 0.0F) {
+        return;
+    }
+
+    float half_w = cell_w_ * 0.5F;
+    float half_h = cell_h_ * 0.5F;
+    float thickness = std::min(cell_w_, cell_h_) * 0.2F;
+
+    ImU32 line_col = IM_COL32(255, 220, 50, 220);
+    ImU32 outline_col = IM_COL32(40, 40, 40, 160);
+    ImU32 arrow_col = IM_COL32(255, 255, 255, 230);
+
+    std::vector<ImVec2> points;
+    points.reserve(path.size());
+    for (const auto& cell : path) {
+        float cx = grid_origin_.x + (static_cast<float>(cell.x) * cell_w_) + half_w;
+        float cy = grid_origin_.y + (static_cast<float>(cell.y) * cell_h_) + half_h;
+        points.emplace_back(cx, cy);
+    }
+
+    // Dark outline then bright line
+    draw_list->AddPolyline(points.data(), static_cast<int>(points.size()), outline_col, 0,
+                           thickness + 2.0F);
+    draw_list->AddPolyline(points.data(), static_cast<int>(points.size()), line_col, 0, thickness);
+
+    // Arrowheads with some spacing
+    if (show_arrows && points.size() > 2) {
+        int spacing = std::max(3, static_cast<int>(points.size()) / 10);
+        float arrow_size = thickness * 2.5F;
+
+        for (std::size_t i = spacing; i + 1 < points.size();
+             i += static_cast<std::size_t>(spacing)) {
+            ImVec2 prev = points[i - 1];
+            ImVec2 curr = points[i];
+
+            // Direction vector
+            float dx = curr.x - prev.x;
+            float dy = curr.y - prev.y;
+            float len = std::sqrt((dx * dx) + (dy * dy));
+
+            if (len < 0.001F) {
+                continue;
+            }
+
+            dx /= len;
+            dy /= len;
+
+            // Perpendicular
+            float px = -dy;
+            float py = dx;
+
+            // Triangle tip ahead of current point and two wings behind
+            ImVec2 tip{curr.x + (dx * arrow_size * 0.5F), curr.y + (dy * arrow_size * 0.5F)};
+            ImVec2 left{curr.x - (dx * arrow_size * 0.5F) + (px * arrow_size * 0.5F),
+                        curr.y - (dy * arrow_size * 0.5F) + (py * arrow_size * 0.5F)};
+            ImVec2 right{curr.x - (dx * arrow_size * 0.5F) - (px * arrow_size * 0.5F),
+                         curr.y - (dy * arrow_size * 0.5F) - (py * arrow_size * 0.5F)};
+
+            draw_list->AddTriangleFilled(tip, left, right, arrow_col);
+        }
+    }
+
+    // Cap the line ends
+    float cap_radius = thickness * 0.6F;
+    draw_list->AddCircleFilled(points.front(), cap_radius, line_col);
+    draw_list->AddCircleFilled(points.back(), cap_radius, line_col);
 }
 
 void GridRenderer::handle_input(Grid& grid, bool editing_enabled) {
@@ -175,7 +319,7 @@ void GridRenderer::handle_input(Grid& grid, bool editing_enabled) {
             } else if (drag_target_ == DragTarget::End && mouse_pos != grid.start()) {
                 grid.set_end(mouse_pos);
             }
-            return; // drag takes priority, skip normal tool handling
+            return; // drag takes priority + skip normal tool handling
         }
         drag_target_ = DragTarget::None;
     }
@@ -298,6 +442,27 @@ CellDirection GridRenderer::direction_brush() const {
     return active_direction_;
 }
 
+ImU32 GridRenderer::heatmap_color(float t) {
+    // Dark blue -> cyan -> bright white-cyan
+    float r{};
+    float g{};
+    float b{};
+
+    if (t < 0.5F) {
+        float s = t * 2.0F;
+        r = 20.0F + (s * 0.0F);
+        g = 20.0F + (s * 160.0F);
+        b = 80.0F + (s * 140.0F);
+    } else {
+        float s = (t - 0.5F) * 2.0F;
+        r = 20.0F + (s * 160.0F);
+        g = 180.0F + (s * 60.0F);
+        b = 220.0F + (s * 35.0F);
+    }
+
+    return IM_COL32(static_cast<uint8_t>(r), static_cast<uint8_t>(g), static_cast<uint8_t>(b), 255);
+}
+
 ImU32 GridRenderer::cell_color(CellState state, int weight) {
     switch (state) {
     case CellState::Empty: {
@@ -321,7 +486,7 @@ ImU32 GridRenderer::cell_color(CellState state, int weight) {
     case CellState::Frontier:
         return IM_COL32(100, 180, 240, 255);
     case CellState::Path:
-        return IM_COL32(255, 220, 50, 255);
+        return IM_COL32(80, 70, 30, 255);
     case CellState::Waypoint:
         return IM_COL32(255, 160, 0, 255);
         break;

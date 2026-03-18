@@ -1,5 +1,7 @@
 #include "MultiPath.hpp"
 
+#include <algorithm>
+
 namespace pathsim {
 
 PathResult find_path_with_waypoints(const Grid& grid, const AlgoFunc& algo) {
@@ -32,6 +34,9 @@ PathResult find_path_with_waypoints(const Grid& grid, const AlgoFunc& algo) {
         combined.algorithm_name = segment.algorithm_name;
         combined.nodes_visited += segment.nodes_visited;
         combined.path_cost += segment.path_cost;
+
+        combined.max_frontier_size =
+            std::max(segment.max_frontier_size, combined.max_frontier_size);
 
         for (const auto& step : segment.steps) {
             if (step.new_state == CellState::Path) {

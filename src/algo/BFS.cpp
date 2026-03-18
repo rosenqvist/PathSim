@@ -47,7 +47,7 @@ PathResult bfs(const Grid& grid, Vec2i start, Vec2i end) {
     std::unordered_map<Vec2i, Vec2i, Vec2iHash> came_from;
 
     frontier.push(start);
-    came_from[start] = start; // start points to itself as a sentinel value
+    came_from[start] = start;
 
     while (!frontier.empty()) {
         Vec2i current = frontier.front();
@@ -63,19 +63,6 @@ PathResult bfs(const Grid& grid, Vec2i start, Vec2i end) {
         if (current == end) {
             record_path(result, came_from, grid, start, end);
             return result;
-        }
-
-        // expand neighbors
-        for (const auto& neighbor : grid.neighbors(current)) {
-            if (!came_from.contains(neighbor)) {
-                came_from[neighbor] = current;
-                frontier.push(neighbor);
-
-                if (neighbor != end) {
-                    result.steps.push_back(
-                        {.position = neighbor, .new_state = CellState::Frontier});
-                }
-            }
         }
 
         // expand neighbors

@@ -36,6 +36,7 @@ float heuristic(Vec2i a, Vec2i b, bool diagonals) {
     }
     return static_cast<float>(dx + dy);
 }
+
 } // namespace
 
 PathResult a_star(const Grid& grid, Vec2i start, Vec2i end) {
@@ -56,6 +57,7 @@ PathResult a_star(const Grid& grid, Vec2i start, Vec2i end) {
         Node current = frontier.top();
         frontier.pop();
 
+        // skip stale entries where we already found a cheaper path
         if (cost_so_far.contains(current.pos) && current.g_cost > cost_so_far[current.pos]) {
             continue;
         }
@@ -86,6 +88,9 @@ PathResult a_star(const Grid& grid, Vec2i start, Vec2i end) {
                 }
             }
         }
+
+        int frontier_size = static_cast<int>(frontier.size());
+        result.max_frontier_size = std::max(frontier_size, result.max_frontier_size);
     }
 
     return result;

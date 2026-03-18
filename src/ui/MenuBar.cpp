@@ -142,6 +142,38 @@ void draw_settings_menu(Grid& grid) {
     ImGui::EndMenu();
 }
 
+void draw_view_menu(ViewSettings& view) {
+    if (!ImGui::BeginMenu("View")) {
+        return;
+    }
+
+    ImGui::Checkbox("Show Heatmap", &view.show_heatmap);
+
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Dark blue = explored early, bright cyan = explored late.\n"
+                          "Shows how each algorithm expands its search.");
+    }
+
+    ImGui::Checkbox("Show Path Direction", &view.show_path_direction);
+
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Draw arrows along the path showing direction of travel.");
+    }
+
+    ImGui::EndMenu();
+}
+
+void draw_diagonal_status(const Grid& grid) {
+    const char* label = grid.allow_diagonals() ? "Diagonal Movement: On" : "Diagonal Movement: Off";
+    float text_w = ImGui::CalcTextSize(label).x;
+    float bar_w = ImGui::GetMainViewport()->Size.x;
+    ImGui::SameLine((bar_w * 0.3F) - (text_w * 0.5F));
+
+    ImVec4 color =
+        grid.allow_diagonals() ? ImVec4(0.3F, 0.8F, 0.4F, 0.9F) : ImVec4(0.6F, 0.6F, 0.6F, 0.5F);
+    ImGui::TextColored(color, "%s", label);
+}
+
 void draw_active_tool(const GridRenderer& renderer) {
     const char* tool_name = nullptr;
     switch (renderer.active_tool()) {
@@ -320,7 +352,8 @@ void draw_tools_menu(GridRenderer& renderer) {
     ImGui::EndMenu();
 }
 
-void draw(Grid& grid, GridRenderer& renderer, Playback& playback, AlgoHistory& history) {
+void draw(Grid& grid, GridRenderer& renderer, Playback& playback, AlgoHistory& history,
+          ViewSettings& view) {
     if (!ImGui::BeginMainMenuBar()) {
         return;
     }
@@ -338,7 +371,9 @@ void draw(Grid& grid, GridRenderer& renderer, Playback& playback, AlgoHistory& h
     draw_algorithm_menu(playback, grid, history);
     draw_playback_menu(playback, grid);
     draw_maze_menu(playback, grid);
+    draw_view_menu(view);
     draw_settings_menu(grid);
+    draw_diagonal_status(grid);
     draw_active_tool(renderer);
     draw_hover_info(grid, renderer);
 

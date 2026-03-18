@@ -1,5 +1,8 @@
 #include "Dijkstra.hpp"
 
+#include "algo/Dijkstra.hpp"
+#include "core/Types.hpp"
+
 #include <algorithm>
 #include <queue>
 #include <unordered_map>
@@ -49,12 +52,9 @@ void record_path(PathResult& result, const std::unordered_map<Vec2i, Vec2i, Vec2
 
 } // namespace
 
-PathResult dijkstra(const Grid& grid) {
+PathResult dijkstra(const Grid& grid, Vec2i start, Vec2i end) {
     PathResult result;
     result.algorithm_name = "Dijkstra";
-
-    Vec2i start = grid.start();
-    Vec2i end = grid.end();
 
     std::priority_queue<Node, std::vector<Node>, std::greater<>> frontier;
     std::unordered_map<Vec2i, Vec2i, Vec2iHash> came_from;
@@ -99,6 +99,10 @@ PathResult dijkstra(const Grid& grid) {
     }
 
     return result;
+}
+
+PathResult dijkstra(const Grid& grid) {
+    return dijkstra(grid, grid.start(), grid.end());
 }
 
 } // namespace pathsim

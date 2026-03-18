@@ -30,6 +30,26 @@ void Playback::update(Grid& grid) {
     }
 
     if (step_index_ >= total) {
+        // Clear exploration cells and keep only the path
+        for (const auto& step : result_.steps) {
+            if (step.new_state == CellState::Visited || step.new_state == CellState::Frontier) {
+                if (grid.at(step.position) != CellState::Path) {
+                    grid.set(step.position, CellState::Empty);
+                }
+            }
+        }
+
+        // Restore waypoints that may have been overwritten during exploration
+        for (const auto& wp : grid.waypoints()) {
+            if (grid.at(wp) != CellState::Path) {
+                grid.set(wp, CellState::Waypoint);
+            }
+        }
+        // Restore start and end
+        grid.set(grid.start(), CellState::Start);
+        grid.set(grid.end(), CellState::End);
+
+        state_ = PlaybackState::Finished;
         state_ = PlaybackState::Finished;
     }
 }

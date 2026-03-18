@@ -49,12 +49,9 @@ void record_path(PathResult& result, const std::unordered_map<Vec2i, Vec2i, Vec2
 
 } // namespace
 
-PathResult bfs(const Grid& grid) {
+PathResult bfs(const Grid& grid, Vec2i start, Vec2i end) {
     PathResult result;
     result.algorithm_name = "BFS";
-
-    Vec2i start = grid.start();
-    Vec2i end = grid.end();
 
     std::queue<Vec2i> frontier;
     std::unordered_map<Vec2i, Vec2i, Vec2iHash> came_from;
@@ -94,6 +91,10 @@ PathResult bfs(const Grid& grid) {
 
     // no path found we return an empty result
     return result;
+}
+
+PathResult bfs(const Grid& grid) {
+    return bfs(grid, grid.start(), grid.end());
 }
 
 } // namespace pathsim

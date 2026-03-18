@@ -32,6 +32,7 @@ class Grid {
     // wall operations, separate bitfields for fast pathfinding checks
     [[nodiscard]] bool is_wall(Vec2i pos) const;
     void set_wall(Vec2i pos, bool wall);
+    void set_impassable(Vec2i pos, bool impassable);
     [[nodiscard]] int weight(Vec2i pos) const;
     void set_weight(Vec2i pos, int weight);
     [[nodiscard]] float move_cost(Vec2i pos) const;
@@ -48,9 +49,13 @@ class Grid {
     // Bounds check
     [[nodiscard]] bool is_valid(Vec2i pos) const;
 
+    void add_waypoint(Vec2i pos);
+    void remove_waypoint(Vec2i pos);
+    [[nodiscard]] const std::vector<Vec2i>& waypoints() const;
+    void clear_waypoints();
+
     // Clears Visited/Frontier/Path cells back to Empty. Keeps walls/start/end.
     void reset_path_state();
-
     // full reset
     void clear();
 
@@ -62,6 +67,7 @@ class Grid {
     std::vector<uint8_t> weights_;
     Vec2i start_{};
     Vec2i end_{};
+    std::vector<Vec2i> waypoints_;
 
     // unchecked in release, asserted in debug, all access needs to go through here
     [[nodiscard]] int index_at(Vec2i pos) const;

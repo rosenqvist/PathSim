@@ -2,6 +2,7 @@
 #include "algo/BFS.hpp"
 #include "algo/Dijkstra.hpp"
 #include "algo/MazeGen.hpp"
+#include "algo/MultiPath.hpp"
 #include "algo/Playback.hpp"
 #include "core/Grid.hpp"
 #include "ui/GridRenderer.hpp"
@@ -13,7 +14,6 @@
 
 #include <array>
 #include <cstdlib>
-#include <math.h>
 #include <string>
 
 #ifdef __EMSCRIPTEN__
@@ -195,9 +195,9 @@ void draw_active_tool(const pathsim::GridRenderer& renderer) {
             g = 0.8F;
             b = 0.8F;
         } else {
-            r = (150.0F + (t * 115.0F)) / 255.0F; // 140 → 255
-            g = (160.0F + (t * 20.0F)) / 255.0F;  // 140 → 160
-            b = (170.0F - (t * 130.0F)) / 255.0F; // 170 → 40
+            r = (150.0F + (t * 115.0F)) / 255.0F;
+            g = (160.0F + (t * 20.0F)) / 255.0F;
+            b = (170.0F - (t * 130.0F)) / 255.0F;
         }
 
         ImGui::TextColored(white, "%s", prefix);
@@ -207,6 +207,12 @@ void draw_active_tool(const pathsim::GridRenderer& renderer) {
         ImGui::TextColored(white, "%s", suffix);
         return;
     }
+    case pathsim::EditTool::Waypoint:
+        tool_name = "Waypoint";
+        break;
+    case pathsim::EditTool::Impassable:
+        tool_name = "Impassable";
+        break;
     }
 
     std::array<char, 32> label{};
@@ -236,8 +242,8 @@ void draw_hover_info(const pathsim::Grid& grid, const pathsim::GridRenderer& ren
     }
 
     float text_width = ImGui::CalcTextSize(label.data()).x;
-    float bar_width = ImGui::GetWindowContentRegionMax().x;
-    ImGui::SameLine(bar_width - text_width - 10.0F);
+    float bar_width = ImGui::GetMainViewport()->Size.x;
+    ImGui::SameLine(bar_width - text_width - 20.0F);
     ImGui::TextColored(ImVec4(1.0F, 1.0F, 1.0F, 0.9F), "%s", label.data());
 }
 
@@ -277,13 +283,22 @@ void draw_algorithm_menu(pathsim::Playback& playback, pathsim::Grid& grid) {
         state == pathsim::PlaybackState::Idle || state == pathsim::PlaybackState::Finished;
 
     if (ImGui::MenuItem("Run BFS", nullptr, false, can_run)) {
-        playback.start(pathsim::bfs(grid), grid);
+        playback.start(pathsim::find_path_with_waypoints(
+                           grid, [](const pathsim::Grid& g, pathsim::Vec2i s,
+                                    pathsim::Vec2i e) { return pathsim::bfs(g, s, e); }),
+                       grid);
     }
     if (ImGui::MenuItem("Run Dijkstra", nullptr, false, can_run)) {
-        playback.start(pathsim::dijkstra(grid), grid);
+        playback.start(pathsim::find_path_with_waypoints(
+                           grid, [](const pathsim::Grid& g, pathsim::Vec2i s,
+                                    pathsim::Vec2i e) { return pathsim::dijkstra(g, s, e); }),
+                       grid);
     }
     if (ImGui::MenuItem("Run A*", nullptr, false, can_run)) {
-        playback.start(pathsim::a_star(grid), grid);
+        playback.start(pathsim::find_path_with_waypoints(
+                           grid, [](const pathsim::Grid& g, pathsim::Vec2i s,
+                                    pathsim::Vec2i e) { return pathsim::a_star(g, s, e); }),
+                       grid);
     }
 
     ImGui::Separator();
@@ -328,6 +343,12 @@ void draw(pathsim::Grid& grid, pathsim::GridRenderer& renderer, pathsim::Playbac
         }
         if (ImGui::MenuItem("Start", nullptr, tool == pathsim::EditTool::Start)) {
             renderer.set_tool(pathsim::EditTool::Start);
+        }
+        if (ImGui::MenuItem("Impassable", nullptr, tool == pathsim::EditTool::Impassable)) {
+            renderer.set_tool(pathsim::EditTool::Impassable);
+        }
+        if (ImGui::MenuItem("Waypoint", nullptr, tool == pathsim::EditTool::Waypoint)) {
+            renderer.set_tool(pathsim::EditTool::Waypoint);
         }
         if (ImGui::MenuItem("End", nullptr, tool == pathsim::EditTool::End)) {
             renderer.set_tool(pathsim::EditTool::End);

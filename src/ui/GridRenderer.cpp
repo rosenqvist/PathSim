@@ -7,6 +7,60 @@
 
 namespace pathsim {
 
+void GridRenderer::draw_weight_label(ImDrawList* draw_list, const Grid& grid, Vec2i cell,
+                                     float x_min, float y_min) const {
+    std::array<char, 4> label{};
+    std::snprintf(label.data(), label.size(), "%d", grid.weight(cell));
+
+    ImVec2 text_size = ImGui::CalcTextSize(label.data());
+    float text_x = x_min + ((cell_w_ - text_size.x) * 0.5F);
+    float text_y = y_min + ((cell_h_ - text_size.y) * 0.5F);
+
+    draw_list->AddText(ImVec2{text_x, text_y}, IM_COL32(255, 255, 255, 220), label.data());
+}
+
+void GridRenderer::draw_impassable(ImDrawList* draw_list, float x_min, float y_min, float x_max,
+                                   float y_max) const {
+    ImU32 hatch_col = IM_COL32(200, 50, 50, 180);
+    float spacing = cell_w_ * 0.25F;
+    for (float offset = 0.0F; offset < cell_w_ + cell_h_; offset += spacing) {
+        float lx0 = x_min + offset;
+        float ly0 = y_min;
+        float lx1 = x_min;
+        float ly1 = y_min + offset;
+
+        if (lx0 > x_max) {
+            ly0 += (lx0 - x_max);
+            lx0 = x_max;
+        }
+        if (ly1 > y_max) {
+            lx1 += (ly1 - y_max);
+            ly1 = y_max;
+        }
+
+        if (lx0 >= x_min && ly0 <= y_max && lx1 <= x_max && ly1 >= y_min) {
+            draw_list->AddLine(ImVec2{lx0, ly0}, ImVec2{lx1, ly1}, hatch_col, 1.5F);
+        }
+    }
+}
+
+void GridRenderer::draw_waypoint(ImDrawList* draw_list, const Grid& grid, Vec2i cell, float x_min,
+                                 float y_min) const {
+    const auto& wps = grid.waypoints();
+    for (std::size_t i = 0; i < wps.size(); ++i) {
+        if (wps[i] == cell) {
+            std::array<char, 4> wp_label{};
+            std::snprintf(wp_label.data(), wp_label.size(), "%d", static_cast<int>(i + 1));
+            ImVec2 text_size = ImGui::CalcTextSize(wp_label.data());
+            float text_x = x_min + ((cell_w_ - text_size.x) * 0.5F);
+            float text_y = y_min + ((cell_h_ - text_size.y) * 0.5F);
+            draw_list->AddText(ImVec2{text_x, text_y}, IM_COL32(255, 255, 255, 255),
+                               wp_label.data());
+            break;
+        }
+    }
+}
+
 void GridRenderer::draw(const Grid& grid) {
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -38,23 +92,18 @@ void GridRenderer::draw(const Grid& grid) {
             float x_max = x_min + cell_w_;
             float y_max = y_min + cell_h_;
 
-            ImVec2 top_left{x_min, y_min};
-            ImVec2 bottom_right{x_max, y_max};
-
-            draw_list->AddRectFilled(top_left, bottom_right,
+            draw_list->AddRectFilled({x_min, y_min}, {x_max, y_max},
                                      cell_color(grid.at(cell), grid.weight(cell)));
-            draw_list->AddRect(top_left, bottom_right, IM_COL32(40, 40, 40, 255));
+            draw_list->AddRect({x_min, y_min}, {x_max, y_max}, IM_COL32(40, 40, 40, 255));
 
             if (grid.weight(cell) > 1 && grid.at(cell) == CellState::Empty) {
-                std::array<char, 4> label{};
-                std::snprintf(label.data(), label.size(), "%d", grid.weight(cell));
-
-                ImVec2 text_size = ImGui::CalcTextSize(label.data());
-                float text_x = x_min + ((cell_w_ - text_size.x) * 0.5F);
-                float text_y = y_min + ((cell_h_ - text_size.y) * 0.5F);
-
-                draw_list->AddText(ImVec2{text_x, text_y}, IM_COL32(255, 255, 255, 220),
-                                   label.data());
+                draw_weight_label(draw_list, grid, cell, x_min, y_min);
+            }
+            if (grid.at(cell) == CellState::Impassable) {
+                draw_impassable(draw_list, x_min, y_min, x_max, y_max);
+            }
+            if (grid.at(cell) == CellState::Waypoint) {
+                draw_waypoint(draw_list, grid, cell, x_min, y_min);
             }
         }
     }
@@ -139,6 +188,12 @@ void GridRenderer::handle_input(Grid& grid, bool editing_enabled) {
         case EditTool::Weight:
             grid.set_weight(mouse_pos, active_weight_);
             break;
+        case EditTool::Waypoint:
+            grid.add_waypoint(mouse_pos);
+            break;
+        case EditTool::Impassable:
+            grid.set_impassable(mouse_pos, true);
+            break;
         }
     }
 
@@ -146,6 +201,8 @@ void GridRenderer::handle_input(Grid& grid, bool editing_enabled) {
     if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
         grid.set_wall(mouse_pos, false);
         grid.set_weight(mouse_pos, 1);
+        grid.remove_waypoint(mouse_pos);
+        grid.set_impassable(mouse_pos, false);
     }
 }
 
@@ -186,9 +243,9 @@ ImU32 GridRenderer::cell_color(CellState state, int weight) {
             return IM_COL32(30, 30, 30, 255);
         }
         float t = static_cast<float>(weight - 2) / 7.0F;
-        auto r = static_cast<uint8_t>(80.0F + (t * 140.0F)); // 80 → 220
-        auto g = static_cast<uint8_t>(90.0F + (t * 30.0F));  // 90 → 120
-        auto b = static_cast<uint8_t>(120.0F - (t * 90.0F)); // 120 → 30
+        auto r = static_cast<uint8_t>(80.0F + (t * 140.0F));
+        auto g = static_cast<uint8_t>(90.0F + (t * 30.0F));
+        auto b = static_cast<uint8_t>(120.0F - (t * 90.0F));
         return IM_COL32(r, g, b, 255);
     }
     case CellState::Wall:
@@ -203,6 +260,12 @@ ImU32 GridRenderer::cell_color(CellState state, int weight) {
         return IM_COL32(100, 180, 240, 255);
     case CellState::Path:
         return IM_COL32(255, 220, 50, 255);
+    case CellState::Waypoint:
+        return IM_COL32(255, 160, 0, 255);
+        break;
+    case CellState::Impassable:
+        return IM_COL32(50, 20, 20, 255);
+        break;
     }
     return IM_COL32(0, 0, 0, 255);
 }

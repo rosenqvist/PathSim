@@ -61,12 +61,9 @@ void record_path(PathResult& result, const std::unordered_map<Vec2i, Vec2i, Vec2
 
 } // namespace
 
-PathResult a_star(const Grid& grid) {
+PathResult a_star(const Grid& grid, Vec2i start, Vec2i end) {
     PathResult result;
     result.algorithm_name = "A*";
-
-    Vec2i start = grid.start();
-    Vec2i end = grid.end();
 
     std::priority_queue<Node, std::vector<Node>, std::greater<>> frontier;
     std::unordered_map<Vec2i, Vec2i, Vec2iHash> came_from;
@@ -109,6 +106,10 @@ PathResult a_star(const Grid& grid) {
     }
 
     return result;
+}
+
+PathResult a_star(const Grid& grid) {
+    return a_star(grid, grid.start(), grid.end());
 }
 
 } // namespace pathsim

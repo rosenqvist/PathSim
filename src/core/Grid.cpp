@@ -37,7 +37,7 @@ void Grid::set(Vec2i pos, CellState state) {
 }
 
 bool Grid::is_wall(Vec2i pos) const {
-    return walls_[index_at(pos)] != 0U;
+    return walls_[index_at(pos)] != 0U || cells_[index_at(pos)] == CellState::Impassable;
 }
 
 void Grid::set_wall(Vec2i pos, bool wall) {
@@ -54,6 +54,59 @@ void Grid::set_wall(Vec2i pos, bool wall) {
     if (wall) {
         weights_[index_at(pos)] = 1;
     }
+}
+
+void Grid::set_impassable(Vec2i pos, bool impassable) {
+    assert(is_valid(pos));
+
+    if (pos == start_ || pos == end_) {
+        return;
+    }
+
+    if (impassable) {
+        walls_[index_at(pos)] = 0U;
+        cells_[index_at(pos)] = CellState::Impassable;
+        weights_[index_at(pos)] = 1;
+    } else if (cells_[index_at(pos)] == CellState::Impassable) {
+        cells_[index_at(pos)] = CellState::Empty;
+    }
+}
+
+void Grid::add_waypoint(Vec2i pos) {
+    if (!is_valid(pos) || pos == start_ || pos == end_ || is_wall(pos)) {
+        return;
+    }
+
+    // prevent duplicates
+    for (const auto& wp : waypoints_) {
+        if (wp == pos) {
+            return;
+        }
+    }
+
+    waypoints_.push_back(pos);
+    cells_[index_at(pos)] = CellState::Waypoint;
+}
+
+void Grid::remove_waypoint(Vec2i pos) {
+    auto it = std::ranges::find(waypoints_, pos);
+    if (it != waypoints_.end()) {
+        cells_[index_at(pos)] = CellState::Empty;
+        waypoints_.erase(it);
+    }
+}
+
+const std::vector<Vec2i>& Grid::waypoints() const {
+    return waypoints_;
+}
+
+void Grid::clear_waypoints() {
+    for (const auto& wp : waypoints_) {
+        if (is_valid(wp)) {
+            cells_[index_at(wp)] = CellState::Empty;
+        }
+    }
+    waypoints_.clear();
 }
 
 int Grid::weight(Vec2i pos) const {
@@ -139,12 +192,18 @@ void Grid::reset_path_state() {
             cell = CellState::Empty;
         }
     }
+
+    // restore waypoint cells that may have been overwritten by the path state
+    for (const auto& wp : waypoints_) {
+        cells_[index_at(wp)] = CellState::Waypoint;
+    }
 }
 
 void Grid::clear() {
     std::ranges::fill(cells_, CellState::Empty);
     std::ranges::fill(walls_, 0);
     std::ranges::fill(weights_, 1);
+    clear_waypoints();
 
     start_ = {.x = 0, .y = 0};
     end_ = {.x = width_ - 1, .y = height_ - 1};

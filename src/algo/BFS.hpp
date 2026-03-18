@@ -9,4 +9,7 @@ namespace pathsim {
 // plus the shortest path if one exists.
 // Does not modify the grid.
 PathResult bfs(const Grid& grid);
+
+// overload for pathfinding between arbitrary points
+PathResult bfs(const Grid& grid, Vec2i start, Vec2i end);
 } // namespace pathsim

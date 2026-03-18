@@ -9,7 +9,7 @@
 
 namespace pathsim {
 
-enum class EditTool : std::uint8_t { Wall, Start, End, Erase, Weight };
+enum class EditTool : std::uint8_t { Wall, Start, End, Erase, Weight, Waypoint, Impassable };
 
 enum class DragTarget : std::uint8_t { None, Start, End };
 
@@ -46,6 +46,13 @@ class GridRenderer {
 
     Vec2i hovered_cell_{.x = -1, .y = -1};
     bool has_hover_{false};
+
+    void draw_weight_label(ImDrawList* draw_list, const Grid& grid, Vec2i cell, float x_min,
+                           float y_min) const;
+    void draw_impassable(ImDrawList* draw_list, float x_min, float y_min, float x_max,
+                         float y_max) const;
+    void draw_waypoint(ImDrawList* draw_list, const Grid& grid, Vec2i cell, float x_min,
+                       float y_min) const;
 };
 
 } // namespace pathsim

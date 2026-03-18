@@ -13,6 +13,7 @@ add_library(pathsim_core STATIC
     src/algo/AStar.cpp
     src/algo/Playback.cpp
     src/algo/MazeGen.cpp
+    src/algo/MultiPath.cpp
 )
 target_compile_options(pathsim_core PRIVATE
     -Wall -Wextra -Wpedantic -Werror -Wno-unused-function
@@ -103,6 +104,8 @@ else()
     tests/astar_tests.cpp
     tests/playback_tests.cpp
     tests/mazegen_tests.cpp
+    tests/waypoint_tests.cpp
+    tests/multipath_tests.cpp
 )
     target_compile_options(pathsim_tests PRIVATE -Wall -Wextra)
     target_link_libraries(pathsim_tests

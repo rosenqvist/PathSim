@@ -18,11 +18,13 @@ struct Vec2i {
 enum class CellState : uint8_t {
     Empty,
     Wall,
+    Impassable,
     Start,
     End,
     Visited,
     Frontier,
     Path,
+    Waypoint,
 };
 
 // for recording algo steps

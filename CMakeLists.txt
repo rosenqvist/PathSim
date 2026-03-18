@@ -49,7 +49,12 @@ if(EMSCRIPTEN)
     )
     target_compile_options(imgui_em PRIVATE -Wno-everything)
 
-    add_executable(PathSim src/main.cpp src/ui/GridRenderer.cpp)
+    add_executable(PathSim
+        src/main.cpp
+        src/ui/GridRenderer.cpp
+        src/ui/MenuBar.cpp
+        src/ui/StatsPanel.cpp
+    )
     target_compile_options(PathSim PRIVATE -Wall -Wextra -Wpedantic -Werror --use-port=contrib.glfw3)
     target_link_libraries(PathSim PRIVATE pathsim_core imgui_em)
 
@@ -74,7 +79,12 @@ else()
     find_package(glfw3 CONFIG REQUIRED)
     find_package(OpenGL REQUIRED)
 
-    add_executable(PathSim src/main.cpp src/ui/GridRenderer.cpp)
+    add_executable(PathSim
+        src/main.cpp
+        src/ui/GridRenderer.cpp
+        src/ui/MenuBar.cpp
+        src/ui/StatsPanel.cpp
+    )
     target_compile_options(PathSim PRIVATE
         -Wall -Wextra -Wpedantic -Werror
         $<$<CONFIG:Release>:-O3>

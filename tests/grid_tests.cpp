@@ -3,7 +3,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-
 TEST_CASE("Grid initializes with correct dimensions", "[grid]") {
     pathsim::Grid grid(10, 8);
 

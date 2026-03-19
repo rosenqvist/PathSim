@@ -49,16 +49,54 @@ void GridRenderer::draw_waypoint(ImDrawList* draw_list, const Grid& grid, Vec2i 
                                  float y_min) const {
     const auto& wps = grid.waypoints();
     for (std::size_t i = 0; i < wps.size(); ++i) {
-        if (wps[i] == cell) {
-            std::array<char, 4> wp_label{};
-            std::snprintf(wp_label.data(), wp_label.size(), "%d", static_cast<int>(i + 1));
-            ImVec2 text_size = ImGui::CalcTextSize(wp_label.data());
+        if (wps[i] != cell) {
+            continue;
+        }
+
+        std::array<char, 4> label{};
+        std::snprintf(label.data(), label.size(), "%d", static_cast<int>(i + 1));
+        ImVec2 text_size = ImGui::CalcTextSize(label.data());
+
+        // Fall back to number only on very small cells
+        if (cell_w_ < 20.0F || cell_h_ < 20.0F) {
             float text_x = x_min + ((cell_w_ - text_size.x) * 0.5F);
             float text_y = y_min + ((cell_h_ - text_size.y) * 0.5F);
-            draw_list->AddText(ImVec2{text_x, text_y}, IM_COL32(255, 255, 255, 255),
-                               wp_label.data());
+            draw_list->AddText(ImVec2{text_x, text_y}, IM_COL32(255, 255, 255, 255), label.data());
             break;
         }
+
+        // Total content width: pole + gap + flag width + gap + number
+        float flag_w = cell_w_ * 0.25F;
+        float flag_h = cell_h_ * 0.3F;
+        float gap = cell_w_ * 0.05F;
+        float pole_thickness = 2.0F;
+        float content_w = pole_thickness + gap + flag_w + gap + text_size.x;
+
+        // Make sure everything is centered horizontally
+        float start_x = x_min + ((cell_w_ - content_w) * 0.5F);
+        float cy = y_min + (cell_h_ * 0.5F);
+
+        // Add Flag pole
+        float pole_x = start_x;
+        float pole_top = cy - (cell_h_ * 0.35F);
+        float pole_bottom = cy + (cell_h_ * 0.3F);
+        draw_list->AddLine(ImVec2{pole_x, pole_top}, ImVec2{pole_x, pole_bottom},
+                           IM_COL32(255, 255, 255, 220), pole_thickness);
+
+        // Add Flag triangle
+        float flag_left = pole_x + (pole_thickness * 0.5F);
+        ImVec2 flag_top{flag_left, pole_top};
+        ImVec2 flag_right{flag_left + flag_w, pole_top + (flag_h * 0.5F)};
+        ImVec2 flag_bottom{flag_left, pole_top + flag_h};
+        draw_list->AddTriangleFilled(flag_top, flag_right, flag_bottom,
+                                     IM_COL32(255, 255, 255, 230));
+
+        // Add number after the flag
+        float text_x = flag_left + flag_w + gap;
+        float text_y = cy - (text_size.y * 0.5F);
+        draw_list->AddText(ImVec2{text_x, text_y}, IM_COL32(255, 255, 255, 255), label.data());
+
+        break;
     }
 }
 

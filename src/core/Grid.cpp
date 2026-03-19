@@ -306,7 +306,7 @@ void Grid::clear() {
     std::ranges::fill(walls_, 0);
     std::ranges::fill(weights_, 1);
     std::ranges::fill(directions_, CellDirection::None);
-    clear_waypoints();
+    waypoints_.clear(); // cells already cleared above, no need for clear_waypoints()
 
     start_ = {.x = 0, .y = 0};
     end_ = {.x = width_ - 1, .y = height_ - 1};

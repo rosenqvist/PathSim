@@ -81,6 +81,10 @@ void Playback::step_forward(Grid& grid) {
     }
 
     apply_step(grid);
+
+    if (step_index_ >= static_cast<int>(result_.steps.size())) {
+        finish_playback(grid);
+    }
 }
 
 void Playback::pause() {

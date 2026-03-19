@@ -129,7 +129,11 @@ void add_terrain(Grid& grid, const GenerateConfig& config, std::mt19937& rng) {
         std::uniform_int_distribution<int> weight_dist(config.min_weight, config.max_weight);
 
         // Place rectangular weight clusters until we hit coverage target
-        while (placed < target) {
+        // prevent potential inifinte loop
+        int attempts = 0;
+        int max_attempts = target * 10;
+        while (placed < target && attempts < max_attempts) {
+            ++attempts;
             int cx = x_dist(rng);
             int cy = y_dist(rng);
             int rw = size_dist(rng);

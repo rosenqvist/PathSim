@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../algo/Playback.hpp"
-#include "../core/Grid.hpp"
+#include "algo/Playback.hpp"
+#include "core/Grid.hpp"
 #include "GridRenderer.hpp"
 
 namespace pathsim::keyboard_shortcuts {

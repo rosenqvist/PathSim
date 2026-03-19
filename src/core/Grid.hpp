@@ -46,7 +46,7 @@ class Grid {
     void set_start(Vec2i pos);
     void set_end(Vec2i pos);
 
-    // returns in-bounds non wall neighbors (4 directional)
+    // returns in-bounds non-wall neighbors (up to 8 with diagonals)
     [[nodiscard]] Neighbors neighbors(Vec2i pos) const;
     void set_allow_diagonals(bool allow);
     [[nodiscard]] bool allow_diagonals() const;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../core/Grid.hpp"
+#include "core/Grid.hpp"
 
 #include <cstdint>
 

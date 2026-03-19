@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../core/Grid.hpp"
-#include "../core/Types.hpp"
+#include "core/Grid.hpp"
+#include "core/Types.hpp"
 
 namespace pathsim {
 // Runs breadth-first search from grid.start() to grid.end().

@@ -1,6 +1,6 @@
-#include "../src/algo/BFS.hpp"
-#include "../src/core/Grid.hpp"
+#include "algo/BFS.hpp"
 #include "algo/Dijkstra.hpp"
+#include "core/Grid.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 

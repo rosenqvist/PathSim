@@ -1,11 +1,11 @@
 #include "MenuBar.hpp"
 
-#include "../algo/AlgoUtils.hpp"
-#include "../algo/AStar.hpp"
-#include "../algo/BFS.hpp"
-#include "../algo/Dijkstra.hpp"
-#include "../algo/MazeGen.hpp"
-#include "../algo/MultiPath.hpp"
+#include "algo/AlgoUtils.hpp"
+#include "algo/AStar.hpp"
+#include "algo/BFS.hpp"
+#include "algo/Dijkstra.hpp"
+#include "algo/MazeGen.hpp"
+#include "algo/MultiPath.hpp"
 
 #include <imgui.h>
 

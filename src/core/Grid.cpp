@@ -301,12 +301,35 @@ void Grid::reset_path_state() {
     }
 }
 
+void Grid::resize(int new_width, int new_height) {
+    if (new_width <= 0 || new_height <= 0) {
+        return;
+    }
+    assert(new_width > 0);
+    assert(new_height > 0);
+
+    width_ = new_width;
+    height_ = new_height;
+
+    auto total = static_cast<std::size_t>(new_width) * static_cast<std::size_t>(new_height);
+    cells_.assign(total, CellState::Empty);
+    walls_.assign(total, 0);
+    weights_.assign(total, 1);
+    directions_.assign(total, CellDirection::None);
+    waypoints_.clear();
+
+    start_ = {.x = 0, .y = 0};
+    end_ = {.x = new_width - 1, .y = new_height - 1};
+    cells_[index_at(start_)] = CellState::Start;
+    cells_[index_at(end_)] = CellState::End;
+}
+
 void Grid::clear() {
     std::ranges::fill(cells_, CellState::Empty);
     std::ranges::fill(walls_, 0);
     std::ranges::fill(weights_, 1);
     std::ranges::fill(directions_, CellDirection::None);
-    waypoints_.clear(); // cells already cleared above, no need for clear_waypoints()
+    waypoints_.clear(); // clear_waypoints()
 
     start_ = {.x = 0, .y = 0};
     end_ = {.x = width_ - 1, .y = height_ - 1};

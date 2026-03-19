@@ -63,6 +63,9 @@ class Grid {
     [[nodiscard]] const std::vector<Vec2i>& waypoints() const;
     void clear_waypoints();
 
+    // Resizes the grid, clears all state
+    void resize(int width, int height);
+
     // Clears Visited/Frontier/Path cells back to Empty. Keeps walls/start/end.
     void reset_path_state();
     // full reset

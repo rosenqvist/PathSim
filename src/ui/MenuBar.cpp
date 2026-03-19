@@ -9,6 +9,7 @@
 
 #include <imgui.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdio>
@@ -129,7 +130,7 @@ void draw_maze_menu(Playback& playback, Grid& grid) {
     ImGui::EndMenu();
 }
 
-void draw_settings_menu(Grid& grid) {
+void draw_settings_menu(Grid& grid, Playback& playback, AlgoHistory& history) {
     if (!ImGui::BeginMenu("Settings")) {
         return;
     }
@@ -137,6 +138,28 @@ void draw_settings_menu(Grid& grid) {
     bool diag = grid.allow_diagonals();
     if (ImGui::Checkbox("Allow Diagonals", &diag)) {
         grid.set_allow_diagonals(diag);
+    }
+
+    ImGui::Separator();
+
+    static int pending_width = 40;
+    static int pending_height = 30;
+
+    ImGui::Spacing();
+    ImGui::SetNextItemWidth(100.0F);
+    ImGui::InputScalar("Width", ImGuiDataType_S32, &pending_width);
+    pending_width = std::clamp(pending_width, 5, 100);
+
+    ImGui::Spacing();
+    ImGui::SetNextItemWidth(100.0F);
+    ImGui::InputScalar("Height", ImGuiDataType_S32, &pending_height);
+    pending_height = std::clamp(pending_height, 5, 100);
+
+    ImGui::Spacing();
+    if (ImGui::Button("Resize Grid")) {
+        playback.reset(grid);
+        history.clear();
+        grid.resize(pending_width, pending_height);
     }
 
     ImGui::EndMenu();
@@ -372,7 +395,7 @@ void draw(Grid& grid, GridRenderer& renderer, Playback& playback, AlgoHistory& h
     draw_playback_menu(playback, grid);
     draw_maze_menu(playback, grid);
     draw_view_menu(view);
-    draw_settings_menu(grid);
+    draw_settings_menu(grid, playback, history);
     draw_diagonal_status(grid);
     draw_active_tool(renderer);
     draw_hover_info(grid, renderer);

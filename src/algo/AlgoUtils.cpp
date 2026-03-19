@@ -5,8 +5,7 @@
 namespace pathsim::algo_utils {
 
 void record_path(PathResult& result, const std::unordered_map<Vec2i, Vec2i, Vec2iHash>& came_from,
-                 const std::unordered_map<Vec2i, float, Vec2iHash>& cost_so_far, Vec2i start,
-                 Vec2i end) {
+                 const Grid& grid, Vec2i start, Vec2i end) {
 
     std::vector<Vec2i> path;
     Vec2i current = end;
@@ -19,7 +18,11 @@ void record_path(PathResult& result, const std::unordered_map<Vec2i, Vec2i, Vec2
 
     std::ranges::reverse(path);
 
-    result.path_cost = cost_so_far.at(end);
+    float cost{0.0F};
+    for (std::size_t i = 1; i < path.size(); ++i) {
+        cost += grid.move_cost(path[i - 1], path[i]);
+    }
+    result.path_cost = cost;
 
     for (const auto& pos : path) {
         if (pos != start && pos != end) {

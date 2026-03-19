@@ -68,7 +68,7 @@ PathResult a_star(const Grid& grid, Vec2i start, Vec2i end) {
         ++result.nodes_visited;
 
         if (current.pos == end) {
-            algo_utils::record_path(result, came_from, cost_so_far, start, end);
+            algo_utils::record_path(result, came_from, grid, start, end);
             return result;
         }
 

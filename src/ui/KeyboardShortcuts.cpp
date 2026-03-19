@@ -65,6 +65,15 @@ void handle_weight_scroll(GridRenderer& renderer) {
         return;
     }
 
+    // Arrow keys to adjust weight brush (works on both desktop and web)
+    if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) {
+        renderer.set_weight_brush(renderer.weight_brush() + 1);
+    }
+    if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow)) {
+        renderer.set_weight_brush(renderer.weight_brush() - 1);
+    }
+
+    // Scroll wheel as an additional input (desktop only)
     float wheel = ImGui::GetIO().MouseWheel;
     if (wheel > 0.0F) {
         renderer.set_weight_brush(renderer.weight_brush() + 1);

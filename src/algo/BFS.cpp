@@ -1,43 +1,13 @@
 #include "BFS.hpp"
 
+#include "AlgoUtils.hpp"
+
 #include <algorithm>
 #include <queue>
 #include <unordered_map>
 #include <vector>
 
 namespace pathsim {
-namespace {
-
-void record_path(PathResult& result, const std::unordered_map<Vec2i, Vec2i, Vec2iHash>& came_from,
-                 const Grid& grid, Vec2i start, Vec2i end) {
-
-    std::vector<Vec2i> path;
-    Vec2i current = end;
-
-    while (current != start) {
-        path.push_back(current);
-        current = came_from.at(current);
-    }
-    path.push_back(start);
-
-    std::ranges::reverse(path);
-
-    float true_cost = 0.0F;
-    for (std::size_t i = 1; i < path.size(); ++i) {
-        true_cost += grid.move_cost(path[i - 1], path[i]);
-    }
-    result.path_cost = true_cost;
-
-    for (const auto& pos : path) {
-        if (pos != start && pos != end) {
-            result.steps.push_back({.position = pos, .new_state = CellState::Path});
-        }
-    }
-
-    result.path = std::move(path);
-}
-
-} // namespace
 
 PathResult bfs(const Grid& grid, Vec2i start, Vec2i end) {
     PathResult result;
@@ -61,7 +31,7 @@ PathResult bfs(const Grid& grid, Vec2i start, Vec2i end) {
 
         // if goal is found, reconstruct and record the path
         if (current == end) {
-            record_path(result, came_from, grid, start, end);
+            algo_utils::record_path(result, came_from, grid, start, end);
             return result;
         }
 

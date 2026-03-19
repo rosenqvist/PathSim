@@ -27,6 +27,9 @@ void Playback::apply_step(Grid& grid) {
 
 void Playback::finish_playback(Grid& grid) {
     // Clear exploration cells, keep only the path
+    // Can't use grid.reset_path_state() here: that clears ALL path-related cells
+    // including Path cells we need to keep Path cells visible while clearing
+    // only Visited/Frontier cells from the exploration phase
     for (const auto& step : result_.steps) {
         if (step.new_state == CellState::Visited || step.new_state == CellState::Frontier) {
             if (grid.at(step.position) != CellState::Path) {

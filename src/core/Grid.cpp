@@ -55,6 +55,12 @@ void Grid::set_wall(Vec2i pos, bool wall) {
     if (wall) {
         weights_[index_at(pos)] = 1;
         directions_[index_at(pos)] = CellDirection::None;
+
+        // Remove from waypoints if present (cell state already set to Wall above)
+        auto it = std::ranges::find(waypoints_, pos);
+        if (it != waypoints_.end()) {
+            waypoints_.erase(it);
+        }
     }
 }
 
@@ -70,12 +76,17 @@ void Grid::set_impassable(Vec2i pos, bool impassable) {
         cells_[index_at(pos)] = CellState::Impassable;
         weights_[index_at(pos)] = 1;
         directions_[index_at(pos)] = CellDirection::None;
-    } else if (cells_[index_at(pos)] == CellState::Impassable) {
-        cells_[index_at(pos)] = CellState::Empty;
+
+        // Remove from waypoints if present (cell state already set to Impassable above)
+        auto it = std::ranges::find(waypoints_, pos);
+        if (it != waypoints_.end()) {
+            waypoints_.erase(it);
+        }
     }
 }
 
 void Grid::add_waypoint(Vec2i pos) {
+    // Bounds-check and return instead of assert should be called directly from users input
     if (!is_valid(pos) || pos == start_ || pos == end_ || is_wall(pos)) {
         return;
     }
@@ -119,6 +130,7 @@ CellDirection Grid::direction(Vec2i pos) const {
 
 void Grid::set_direction(Vec2i pos, CellDirection dir) {
     assert(is_valid(pos));
+    // is_wall() covers both Wall and Impassable cells
     if (is_wall(pos)) {
         return;
     }

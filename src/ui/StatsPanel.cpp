@@ -17,7 +17,7 @@
 namespace pathsim::stats_panel {
 namespace {
 
-void run_comparison(Grid& grid, AlgoHistory& history, const AlgoFunc& algo) {
+void run_comparison(const Grid& grid, AlgoHistory& history, const AlgoFunc& algo) {
     auto t0 = std::chrono::high_resolution_clock::now();
     auto result = find_path_with_waypoints(grid, algo);
     auto t1 = std::chrono::high_resolution_clock::now();

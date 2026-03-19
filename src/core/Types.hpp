@@ -64,7 +64,7 @@ using AlgoHistory = std::unordered_map<std::string, AlgoStats>;
 
 struct Vec2iHash {
     std::size_t operator()(const Vec2i& v) const {
-        return std::hash<int>()(v.x) ^ (std::hash<int>()(v.y) << 16);
+        return std::hash<int>()(v.x) ^ (std::hash<int>()(v.y) * 2654435761U);
     }
 };
 

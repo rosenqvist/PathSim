@@ -82,6 +82,10 @@ void Grid::set_impassable(Vec2i pos, bool impassable) {
         if (it != waypoints_.end()) {
             waypoints_.erase(it);
         }
+    } else {
+        if (cells_[index_at(pos)] == CellState::Impassable) {
+            cells_[index_at(pos)] = CellState::Empty;
+        }
     }
 }
 

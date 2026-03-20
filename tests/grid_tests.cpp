@@ -157,3 +157,15 @@ TEST_CASE("Setting end clears weight and direction", "[grid]") {
     REQUIRE(grid.weight(pos) == 1);
     REQUIRE(grid.direction(pos) == pathsim::CellDirection::None);
 }
+
+TEST_CASE("Clearing impassable restores cell to empty", "[grid]") {
+    pathsim::Grid grid(10, 10);
+    pathsim::Vec2i pos{.x = 3, .y = 3};
+
+    grid.set_impassable(pos, true);
+    REQUIRE(grid.at(pos) == pathsim::CellState::Impassable);
+
+    grid.set_impassable(pos, false);
+    REQUIRE(grid.at(pos) == pathsim::CellState::Empty);
+    REQUIRE_FALSE(grid.is_wall(pos));
+}

@@ -91,3 +91,29 @@ TEST_CASE("Waypoints maintain insertion order", "[waypoint]") {
     REQUIRE(grid.waypoints()[1] == wp2);
     REQUIRE(grid.waypoints()[2] == wp3);
 }
+
+TEST_CASE("Moving start onto waypoint removes it", "[waypoint]") {
+    pathsim::Grid grid(10, 10);
+    pathsim::Vec2i wp{.x = 3, .y = 3};
+
+    grid.add_waypoint(wp);
+    REQUIRE(grid.waypoints().size() == 1);
+
+    grid.set_start(wp);
+
+    REQUIRE(grid.waypoints().empty());
+    REQUIRE(grid.at(wp) == pathsim::CellState::Start);
+}
+
+TEST_CASE("Moving end onto waypoint removes it", "[waypoint]") {
+    pathsim::Grid grid(10, 10);
+    pathsim::Vec2i wp{.x = 5, .y = 5};
+
+    grid.add_waypoint(wp);
+    REQUIRE(grid.waypoints().size() == 1);
+
+    grid.set_end(wp);
+
+    REQUIRE(grid.waypoints().empty());
+    REQUIRE(grid.at(wp) == pathsim::CellState::End);
+}

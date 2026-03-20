@@ -181,6 +181,11 @@ void Grid::set_start(Vec2i pos) {
     start_ = pos;
     walls_[index_at(pos)] = 0U;
     cells_[index_at(pos)] = CellState::Start;
+
+    auto it = std::ranges::find(waypoints_, pos);
+    if (it != waypoints_.end()) {
+        waypoints_.erase(it);
+    }
 }
 
 void Grid::set_end(Vec2i pos) {
@@ -191,6 +196,11 @@ void Grid::set_end(Vec2i pos) {
     end_ = pos;
     walls_[index_at(pos)] = 0U;
     cells_[index_at(pos)] = CellState::End;
+
+    auto it = std::ranges::find(waypoints_, pos);
+    if (it != waypoints_.end()) {
+        waypoints_.erase(it);
+    }
 }
 
 Neighbors Grid::neighbors(Vec2i pos) const {
@@ -305,8 +315,6 @@ void Grid::resize(int new_width, int new_height) {
     if (new_width <= 0 || new_height <= 0) {
         return;
     }
-    assert(new_width > 0);
-    assert(new_height > 0);
 
     width_ = new_width;
     height_ = new_height;

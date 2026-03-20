@@ -133,3 +133,27 @@ TEST_CASE("Algorithms work after resize", "[grid]") {
     REQUIRE(result.path.front() == grid.start());
     REQUIRE(result.path.back() == grid.end());
 }
+
+TEST_CASE("Setting start clears weight and direction", "[grid]") {
+    pathsim::Grid grid(10, 10);
+    pathsim::Vec2i pos{.x = 3, .y = 3};
+
+    grid.set_weight(pos, 7);
+    grid.set_direction(pos, pathsim::CellDirection::East);
+    grid.set_start(pos);
+
+    REQUIRE(grid.weight(pos) == 1);
+    REQUIRE(grid.direction(pos) == pathsim::CellDirection::None);
+}
+
+TEST_CASE("Setting end clears weight and direction", "[grid]") {
+    pathsim::Grid grid(10, 10);
+    pathsim::Vec2i pos{.x = 5, .y = 5};
+
+    grid.set_weight(pos, 4);
+    grid.set_direction(pos, pathsim::CellDirection::North);
+    grid.set_end(pos);
+
+    REQUIRE(grid.weight(pos) == 1);
+    REQUIRE(grid.direction(pos) == pathsim::CellDirection::None);
+}

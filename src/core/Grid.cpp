@@ -181,6 +181,8 @@ void Grid::set_start(Vec2i pos) {
     start_ = pos;
     walls_[index_at(pos)] = 0U;
     cells_[index_at(pos)] = CellState::Start;
+    weights_[index_at(pos)] = 1;
+    directions_[index_at(pos)] = CellDirection::None;
 
     auto it = std::ranges::find(waypoints_, pos);
     if (it != waypoints_.end()) {
@@ -196,6 +198,8 @@ void Grid::set_end(Vec2i pos) {
     end_ = pos;
     walls_[index_at(pos)] = 0U;
     cells_[index_at(pos)] = CellState::End;
+    weights_[index_at(pos)] = 1;
+    directions_[index_at(pos)] = CellDirection::None;
 
     auto it = std::ranges::find(waypoints_, pos);
     if (it != waypoints_.end()) {

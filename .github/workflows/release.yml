@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    runs-on: windows-2025-vs2026
+    name: Windows Release
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: '4b77da7fed37817f124936239197833469f1b9a8'
+
+      - name: Configure
+        run: |
+          cmake -B build/release -G "Visual Studio 18 2026" `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DVCPKG_TARGET_TRIPLET=x64-windows-static `
+            -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
+
+      - name: Build
+        run: cmake --build build/release --config Release --target PathSim
+
+      - name: Package
+        run: |
+          mkdir PathSim
+          Copy-Item build/release/Release/PathSim.exe PathSim/
+          Copy-Item -Recurse resources PathSim/resources
+          Compress-Archive -Path PathSim -DestinationPath PathSim-windows.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: PathSim-windows.zip
+          generate_release_notes: true

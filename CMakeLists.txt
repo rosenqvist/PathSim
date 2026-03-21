@@ -17,8 +17,9 @@ add_library(pathsim_core STATIC
     src/algo/AlgoUtils.cpp
 )
 target_compile_options(pathsim_core PRIVATE
-    -Wall -Wextra -Wpedantic -Werror -Wno-unused-function
-    $<$<CONFIG:Release>:-O3>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror -Wno-unused-function>
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    $<$<AND:$<NOT:$<CXX_COMPILER_ID:MSVC>>,$<CONFIG:Release>>:-O3>
 )
 target_include_directories(pathsim_core
     PUBLIC
@@ -89,8 +90,9 @@ else()
         src/ui/KeyboardShortcuts.cpp
     )
     target_compile_options(PathSim PRIVATE
-        -Wall -Wextra -Wpedantic -Werror
-        $<$<CONFIG:Release>:-O3>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    $<$<AND:$<NOT:$<CXX_COMPILER_ID:MSVC>>,$<CONFIG:Release>>:-O3>
     )
     target_link_libraries(PathSim
         PRIVATE
@@ -122,7 +124,10 @@ add_executable(pathsim_tests
     tests/diagonal_tests.cpp
     tests/oneway_tests.cpp
 )
-    target_compile_options(pathsim_tests PRIVATE -Wall -Wextra)
+    target_compile_options(pathsim_tests PRIVATE
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wall -Wextra>
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+)
     target_link_libraries(pathsim_tests
         PRIVATE
             pathsim_core

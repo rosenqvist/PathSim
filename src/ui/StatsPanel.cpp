@@ -62,7 +62,7 @@ void draw_controls(Playback& playback, Grid& grid) {
     ImGui::Text("Progress: %d / %d", playback.current_step(), playback.total_steps());
 }
 
-void draw_compare_buttons(const PathResult& current, Grid& grid, AlgoHistory& history) {
+void draw_compare_buttons(const PathResult& current, const Grid& grid, AlgoHistory& history) {
     struct AlgoEntry {
         const char* name;
         const char* button_label;

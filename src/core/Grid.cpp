@@ -96,10 +96,8 @@ void Grid::add_waypoint(Vec2i pos) {
     }
 
     // prevent duplicates
-    for (const auto& wp : waypoints_) {
-        if (wp == pos) {
-            return;
-        }
+    if (std::ranges::any_of(waypoints_, [&pos](const Vec2i& wp) { return wp == pos; })) {
+        return;
     }
 
     waypoints_.push_back(pos);
@@ -160,13 +158,13 @@ float Grid::move_cost(Vec2i from, Vec2i to) const {
     assert(is_valid(from));
     assert(is_valid(to));
 
-    auto weight = static_cast<float>(weights_[index_at(to)]);
+    auto dest_weight = static_cast<float>(weights_[index_at(to)]);
     bool diagonal = (from.x != to.x) && (from.y != to.y);
 
     if (diagonal) {
-        return weight * std::numbers::sqrt2_v<float>;
+        return dest_weight * std::numbers::sqrt2_v<float>;
     }
-    return weight;
+    return dest_weight;
 }
 
 Vec2i Grid::start() const {
@@ -307,11 +305,12 @@ bool Grid::is_valid(Vec2i pos) const {
 }
 
 void Grid::reset_path_state() {
-    for (auto& cell : cells_) {
-        if (cell == CellState::Visited || cell == CellState::Frontier || cell == CellState::Path) {
-            cell = CellState::Empty;
-        }
-    }
+    std::ranges::replace_if(
+        cells_,
+        [](CellState s) {
+            return s == CellState::Visited || s == CellState::Frontier || s == CellState::Path;
+        },
+        CellState::Empty);
 
     // restore waypoint cells that may have been overwritten by the path state
     for (const auto& wp : waypoints_) {
@@ -319,15 +318,15 @@ void Grid::reset_path_state() {
     }
 }
 
-void Grid::resize(int new_width, int new_height) {
-    if (new_width <= 0 || new_height <= 0) {
+void Grid::resize(int width, int height) {
+    if (width <= 0 || height <= 0) {
         return;
     }
 
-    width_ = new_width;
-    height_ = new_height;
+    width_ = width;
+    height_ = height;
 
-    auto total = static_cast<std::size_t>(new_width) * static_cast<std::size_t>(new_height);
+    auto total = static_cast<std::size_t>(width) * static_cast<std::size_t>(height);
     cells_.assign(total, CellState::Empty);
     walls_.assign(total, 0);
     weights_.assign(total, 1);
@@ -335,7 +334,7 @@ void Grid::resize(int new_width, int new_height) {
     waypoints_.clear();
 
     start_ = {.x = 0, .y = 0};
-    end_ = {.x = new_width - 1, .y = new_height - 1};
+    end_ = {.x = width - 1, .y = height - 1};
     cells_[index_at(start_)] = CellState::Start;
     cells_[index_at(end_)] = CellState::End;
 }
@@ -345,7 +344,7 @@ void Grid::clear() {
     std::ranges::fill(walls_, 0);
     std::ranges::fill(weights_, 1);
     std::ranges::fill(directions_, CellDirection::None);
-    waypoints_.clear(); // clear_waypoints()
+    clear_waypoints();
 
     start_ = {.x = 0, .y = 0};
     end_ = {.x = width_ - 1, .y = height_ - 1};

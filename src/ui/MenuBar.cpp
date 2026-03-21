@@ -183,6 +183,8 @@ void draw_view_menu(ViewSettings& view) {
         ImGui::SetTooltip("Draw arrows along the path showing direction of travel.");
     }
 
+    ImGui::Checkbox("Show Cell Tooltips", &view.show_tooltips);
+
     ImGui::EndMenu();
 }
 

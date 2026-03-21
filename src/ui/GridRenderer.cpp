@@ -8,6 +8,222 @@
 
 namespace pathsim {
 
+void GridRenderer::draw_direction_indicator(ImDrawList* draw_list, CellDirection dir, float x_min,
+                                            float y_min, float x_max, float y_max) const {
+    ImU32 clear = IM_COL32(80, 150, 220, 0);
+    ImU32 tint = IM_COL32(80, 150, 220, 65);
+
+    ImU32 tl = clear;
+    ImU32 tr = clear;
+    ImU32 br = clear;
+    ImU32 bl = clear;
+
+    switch (dir) {
+    case CellDirection::North:
+        tl = tint;
+        tr = tint;
+        break;
+    case CellDirection::South:
+        bl = tint;
+        br = tint;
+        break;
+    case CellDirection::East:
+        tr = tint;
+        br = tint;
+        break;
+    case CellDirection::West:
+        tl = tint;
+        bl = tint;
+        break;
+    case CellDirection::None:
+        return;
+    }
+
+    draw_list->AddRectFilledMultiColor(ImVec2{x_min, y_min}, ImVec2{x_max, y_max}, tl, tr, br, bl);
+
+    ImU32 stripe = IM_COL32(90, 170, 255, 160);
+    float thickness = std::max(2.0F, std::min(cell_w_, cell_h_) * 0.07F);
+
+    switch (dir) {
+    case CellDirection::North:
+        draw_list->AddLine(ImVec2{x_min, y_min}, ImVec2{x_max, y_min}, stripe, thickness);
+        break;
+    case CellDirection::South:
+        draw_list->AddLine(ImVec2{x_min, y_max}, ImVec2{x_max, y_max}, stripe, thickness);
+        break;
+    case CellDirection::East:
+        draw_list->AddLine(ImVec2{x_max, y_min}, ImVec2{x_max, y_max}, stripe, thickness);
+        break;
+    case CellDirection::West:
+        draw_list->AddLine(ImVec2{x_min, y_min}, ImVec2{x_min, y_max}, stripe, thickness);
+        break;
+    case CellDirection::None:
+        break;
+    }
+}
+
+void GridRenderer::draw_direction_badge(ImDrawList* draw_list, CellDirection dir,
+                                        ImVec2 top_right) const {
+    // adjust size of direction badge 0.35 is a happy medium
+    float size = std::min(cell_w_, cell_h_) * 0.35F;
+    float padding = size * 0.15F;
+
+    float cx = top_right.x - padding - (size * 0.5F);
+    float cy = top_right.y + padding + (size * 0.5F);
+    float half = size * 0.5F;
+
+    // Rounded dark background
+    draw_list->AddRectFilled(ImVec2{cx - half, cy - half}, ImVec2{cx + half, cy + half},
+                             IM_COL32(10, 10, 15, 210), 3.0F);
+    draw_list->AddRect(ImVec2{cx - half, cy - half}, ImVec2{cx + half, cy + half},
+                       IM_COL32(90, 170, 255, 100), 3.0F, 0, 1.0F);
+
+    // Clean chevron arrow inside
+    float arm = size * 0.28F;
+    ImU32 col = IM_COL32(180, 210, 255, 240);
+    float line_w = std::max(1.5F, size * 0.12F);
+
+    switch (dir) {
+    case CellDirection::North:
+        draw_list->AddLine(ImVec2{cx - arm, cy + (arm * 0.4F)}, ImVec2{cx, cy - (arm * 0.6F)}, col,
+                           line_w);
+        draw_list->AddLine(ImVec2{cx, cy - (arm * 0.6F)}, ImVec2{cx + arm, cy + (arm * 0.4F)}, col,
+                           line_w);
+        break;
+    case CellDirection::South:
+        draw_list->AddLine(ImVec2{cx - arm, cy - (arm * 0.4F)}, ImVec2{cx, cy + (arm * 0.6F)}, col,
+                           line_w);
+        draw_list->AddLine(ImVec2{cx, cy + (arm * 0.6F)}, ImVec2{cx + arm, cy - (arm * 0.4F)}, col,
+                           line_w);
+        break;
+    case CellDirection::East:
+        draw_list->AddLine(ImVec2{cx - (arm * 0.4F), cy - arm}, ImVec2{cx + (arm * 0.6F), cy}, col,
+                           line_w);
+        draw_list->AddLine(ImVec2{cx + (arm * 0.6F), cy}, ImVec2{cx - (arm * 0.4F), cy + arm}, col,
+                           line_w);
+        break;
+    case CellDirection::West:
+        draw_list->AddLine(ImVec2{cx + (arm * 0.4F), cy - arm}, ImVec2{cx - (arm * 0.6F), cy}, col,
+                           line_w);
+        draw_list->AddLine(ImVec2{cx - (arm * 0.6F), cy}, ImVec2{cx + (arm * 0.4F), cy + arm}, col,
+                           line_w);
+        break;
+    case CellDirection::None:
+        return;
+    }
+}
+
+void GridRenderer::draw_cell_tooltip(const Grid& grid, Vec2i cell) {
+    CellState state = grid.at(cell);
+    int w = grid.weight(cell);
+    CellDirection dir = grid.direction(cell);
+
+    // Figure out if there's anything worth showing beyond coordinates
+    bool has_state_info = state != CellState::Empty;
+    bool has_weight = w > 1;
+    bool has_direction = dir != CellDirection::None;
+
+    if (!has_state_info && !has_weight && !has_direction) {
+        return;
+    }
+
+    ImGui::BeginTooltip();
+    ImGui::Text("(%d, %d)", cell.x, cell.y);
+    ImGui::Separator();
+
+    switch (state) {
+    case CellState::Wall:
+        ImGui::TextColored(ImVec4(0.7F, 0.7F, 0.7F, 1.0F), "Wall");
+        break;
+    case CellState::Start:
+        ImGui::TextColored(ImVec4(0.0F, 0.8F, 0.3F, 1.0F), "Start");
+        break;
+    case CellState::End:
+        ImGui::TextColored(ImVec4(0.9F, 0.2F, 0.2F, 1.0F), "End");
+        break;
+    case CellState::Waypoint: {
+        const auto& wps = grid.waypoints();
+        for (std::size_t i = 0; i < wps.size(); ++i) {
+            if (wps[i] == cell) {
+                ImGui::TextColored(ImVec4(1.0F, 0.6F, 0.0F, 1.0F), "Waypoint #%d",
+                                   static_cast<int>(i + 1));
+                break;
+            }
+        }
+        break;
+    }
+    case CellState::Impassable:
+        ImGui::TextColored(ImVec4(0.8F, 0.2F, 0.2F, 1.0F), "Impassable");
+        break;
+    case CellState::Visited:
+        ImGui::TextColored(ImVec4(0.2F, 0.4F, 0.7F, 1.0F), "Visited");
+        break;
+    case CellState::Frontier:
+        ImGui::TextColored(ImVec4(0.4F, 0.7F, 0.9F, 1.0F), "Frontier");
+        break;
+    case CellState::Path:
+        ImGui::TextColored(ImVec4(1.0F, 0.9F, 0.2F, 1.0F), "Path");
+        break;
+    case CellState::Empty:
+        break;
+    }
+
+    if (has_weight) {
+        ImGui::Text("Weight: %d", w);
+    }
+
+    if (has_direction) {
+        const char* dir_name = "None";
+        switch (dir) {
+        case CellDirection::North:
+            dir_name = "North";
+            break;
+        case CellDirection::South:
+            dir_name = "South";
+            break;
+        case CellDirection::East:
+            dir_name = "East";
+            break;
+        case CellDirection::West:
+            dir_name = "West";
+            break;
+        case CellDirection::None:
+            break;
+        }
+        ImGui::Text("Direction: %s", dir_name);
+    }
+
+    ImGui::EndTooltip();
+}
+
+void GridRenderer::draw_hover(const Grid& grid, const ViewSettings& view) {
+    if (!is_hovered_) {
+        has_hover_ = false;
+        return;
+    }
+
+    ImVec2 mouse_pos = ImGui::GetMousePos();
+    int hx = static_cast<int>((mouse_pos.x - grid_origin_.x) / cell_w_);
+    int hy = static_cast<int>((mouse_pos.y - grid_origin_.y) / cell_h_);
+    Vec2i hover_cell{.x = hx, .y = hy};
+
+    has_hover_ = grid.is_valid(hover_cell);
+    hovered_cell_ = hover_cell;
+
+    if (has_hover_) {
+        float x_min = grid_origin_.x + (static_cast<float>(hx) * cell_w_);
+        float y_min = grid_origin_.y + (static_cast<float>(hy) * cell_h_);
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        draw_list->AddRect(ImVec2{x_min, y_min}, ImVec2{x_min + cell_w_, y_min + cell_h_},
+                           IM_COL32(255, 255, 255, 120), 0.0F, 0, 2.0F);
+
+        if (view.show_tooltips && !ImGui::IsMouseDown(ImGuiMouseButton_Left) &&
+            !ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+            draw_cell_tooltip(grid, hover_cell);
+        }
+    }
+}
+
 void GridRenderer::draw_weight_label(ImDrawList* draw_list, const Grid& grid, Vec2i cell,
                                      float x_min, float y_min) const {
     std::array<char, 4> label{};
@@ -66,8 +282,8 @@ void GridRenderer::draw_waypoint(ImDrawList* draw_list, const Grid& grid, Vec2i 
         }
 
         // Total content width: pole + gap + flag width + gap + number
-        float flag_w = cell_w_ * 0.25F;
-        float flag_h = cell_h_ * 0.3F;
+        float flag_w = cell_w_ * 0.20F;
+        float flag_h = cell_h_ * 0.25F;
         float gap = cell_w_ * 0.05F;
         float pole_thickness = 2.0F;
         float content_w = pole_thickness + gap + flag_w + gap + text_size.x;
@@ -78,8 +294,8 @@ void GridRenderer::draw_waypoint(ImDrawList* draw_list, const Grid& grid, Vec2i 
 
         // Add Flag pole
         float pole_x = start_x;
-        float pole_top = cy - (cell_h_ * 0.35F);
-        float pole_bottom = cy + (cell_h_ * 0.3F);
+        float pole_top = cy - (cell_h_ * 0.28F);
+        float pole_bottom = cy + (cell_h_ * 0.24F);
         draw_list->AddLine(ImVec2{pole_x, pole_top}, ImVec2{pole_x, pole_bottom},
                            IM_COL32(255, 255, 255, 220), pole_thickness);
 
@@ -150,8 +366,16 @@ void GridRenderer::draw_cell_overlays(ImDrawList* draw_list, const Grid& grid, V
         draw_waypoint(draw_list, grid, cell, x_min, y_min);
     }
     if (grid.direction(cell) != CellDirection::None) {
-        draw_direction_arrow(draw_list, grid.direction(cell), ImVec2{x_min, y_min},
-                             ImVec2{x_max, y_max});
+        draw_direction_indicator(draw_list, grid.direction(cell), x_min, y_min, x_max, y_max);
+        bool has_content = state == CellState::Waypoint || state == CellState::Start ||
+                           state == CellState::End ||
+                           (state == CellState::Empty && grid.weight(cell) > 1);
+        if (has_content) {
+            draw_direction_badge(draw_list, grid.direction(cell), ImVec2{x_max, y_min});
+        } else {
+            draw_direction_arrow(draw_list, grid.direction(cell), ImVec2{x_min, y_min},
+                                 ImVec2{x_max, y_max});
+        }
     }
 }
 
@@ -214,7 +438,18 @@ void GridRenderer::draw(const Grid& grid, const ViewSettings& view,
             }
 
             draw_list->AddRectFilled({x_min, y_min}, {x_max, y_max}, fill);
-            draw_list->AddRect({x_min, y_min}, {x_max, y_max}, IM_COL32(40, 40, 40, 255));
+            draw_list->AddRect({x_min, y_min}, {x_max, y_max}, IM_COL32(38, 38, 45, 200));
+
+            if (grid.at(cell) == CellState::Wall) {
+                draw_list->AddLine({x_min + 1.0F, y_min}, {x_max - 1.0F, y_min},
+                                   IM_COL32(210, 210, 210, 60), 1.0F);
+                draw_list->AddLine({x_min, y_min + 1.0F}, {x_min, y_max - 1.0F},
+                                   IM_COL32(210, 210, 210, 40), 1.0F);
+                draw_list->AddLine({x_min + 1.0F, y_max}, {x_max - 1.0F, y_max},
+                                   IM_COL32(80, 80, 80, 60), 1.0F);
+                draw_list->AddLine({x_max, y_min + 1.0F}, {x_max, y_max - 1.0F},
+                                   IM_COL32(80, 80, 80, 40), 1.0F);
+            }
 
             draw_cell_overlays(draw_list, grid, cell, x_min, y_min, x_max, y_max);
         }
@@ -225,25 +460,8 @@ void GridRenderer::draw(const Grid& grid, const ViewSettings& view,
         draw_path_overlay(draw_list, finished_result->path, view.show_path_direction);
     }
 
-    // Hover highlight
-    if (is_hovered_) {
-        ImVec2 mouse_pos = ImGui::GetMousePos();
-        int hx = static_cast<int>((mouse_pos.x - grid_origin_.x) / cell_w_);
-        int hy = static_cast<int>((mouse_pos.y - grid_origin_.y) / cell_h_);
-        Vec2i hover_cell{.x = hx, .y = hy};
-
-        has_hover_ = grid.is_valid(hover_cell);
-        hovered_cell_ = hover_cell;
-
-        if (has_hover_) {
-            float x_min = grid_origin_.x + (static_cast<float>(hx) * cell_w_);
-            float y_min = grid_origin_.y + (static_cast<float>(hy) * cell_h_);
-            draw_list->AddRect(ImVec2{x_min, y_min}, ImVec2{x_min + cell_w_, y_min + cell_h_},
-                               IM_COL32(255, 255, 255, 120), 0.0F, 0, 2.0F);
-        }
-    } else {
-        has_hover_ = false;
-    }
+    // Mouse Hover highlight
+    draw_hover(grid, view);
 
     ImGui::Dummy(available);
     ImGui::End();

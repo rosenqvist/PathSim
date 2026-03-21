@@ -74,6 +74,12 @@ class GridRenderer {
     void draw_path_overlay(ImDrawList* draw_list, const std::vector<Vec2i>& path,
                            bool show_arrows) const;
 
+    void draw_direction_indicator(ImDrawList* draw_list, CellDirection dir, float x_min,
+                                  float y_min, float x_max, float y_max) const;
+    void draw_direction_badge(ImDrawList* draw_list, CellDirection dir, ImVec2 top_right) const;
+    static void draw_cell_tooltip(const Grid& grid, Vec2i cell);
+    void draw_hover(const Grid& grid, const ViewSettings& view);
+
     CellDirection active_direction_ = CellDirection::East;
 };
 

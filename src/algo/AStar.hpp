@@ -4,9 +4,8 @@
 #include "core/Types.hpp"
 
 namespace pathsim {
-
 // Runs A* search from grid.start() to grid.end().
-// Uses Manhattan distance as the heuristic.
+// Uses Manhattan distance for cardinal movement, octile distance for diagonal.
 // Does not modify the grid.
 PathResult a_star(const Grid& grid);
 

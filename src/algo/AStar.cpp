@@ -21,6 +21,8 @@ struct Node {
         if (priority != other.priority) {
             return priority > other.priority;
         }
+        // Prefer higher g-cost when f-costs tie: same f but higher g means
+        // lower h (closer to goal), so expand those first
         return g_cost < other.g_cost;
     }
 };

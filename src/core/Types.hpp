@@ -47,7 +47,7 @@ struct PathResult {
     int max_frontier_size{};
     float path_cost{};
     float compute_time_ms{};
-    const char* algorithm_name = "None";
+    std::string algorithm_name = "None";
 };
 
 // lightweight snapshot for comparing algorithms without having to store full step recordings
@@ -57,12 +57,14 @@ struct AlgoStats {
     int path_length{};
     float path_cost{};
     float compute_time_ms{};
-    const char* algorithm_name = "None";
+    std::string algorithm_name = "None";
 };
 
 using AlgoHistory = std::unordered_map<std::string, AlgoStats>;
 
 struct Vec2iHash {
+    // Knuth multiplicative hash (got this from art of computer programming book) to spread y-values
+    // across buckets and reduce collisions from the simple XOR with x
     std::size_t operator()(const Vec2i& v) const {
         return std::hash<int>()(v.x) ^ (std::hash<int>()(v.y) * 2654435761U);
     }

@@ -12,7 +12,6 @@
 #include <chrono>
 #include <cstdio>
 #include <string>
-#include <string_view>
 
 namespace pathsim::stats_panel {
 namespace {
@@ -82,7 +81,7 @@ void draw_compare_buttons(const PathResult& current, const Grid& grid, AlgoHisto
     }};
 
     for (const auto& algo : algos) {
-        if (std::string_view(current.algorithm_name) == algo.name) {
+        if (current.algorithm_name == algo.name) {
             continue;
         }
 
@@ -106,7 +105,7 @@ void draw_comparison(const PathResult& current, const AlgoHistory& history) {
         }
 
         ImGui::Spacing();
-        ImGui::TextColored(ImVec4(0.7F, 0.7F, 0.9F, 1.0F), "%s", stats.algorithm_name);
+        ImGui::TextColored(ImVec4(0.7F, 0.7F, 0.9F, 1.0F), "%s", stats.algorithm_name.c_str());
 
         if (stats.compute_time_ms > 0.0F) {
             ImGui::Text("  Time: %.2f ms", static_cast<double>(stats.compute_time_ms));
@@ -145,7 +144,7 @@ void draw_copy_button(const PathResult& result, const AlgoHistory& history) {
     }
 
     std::string stats;
-    stats += std::string(result.algorithm_name) + "\n";
+    stats += result.algorithm_name + "\n";
     stats += "Nodes explored: " + std::to_string(result.nodes_visited) + "\n";
     stats += "Peak frontier: " + std::to_string(result.max_frontier_size) + "\n";
     stats +=
@@ -162,7 +161,7 @@ void draw_copy_button(const PathResult& result, const AlgoHistory& history) {
             continue;
         }
 
-        stats += "\n" + std::string(cmp.algorithm_name) + "\n";
+        stats += "\n" + cmp.algorithm_name + "\n";
         stats += "  Nodes explored: " + std::to_string(cmp.nodes_visited) + "\n";
         stats += "  Peak frontier: " + std::to_string(cmp.max_frontier_size) + "\n";
         stats += "  Path length: " + std::to_string(cmp.path_length - 1) + " steps\n";
@@ -207,7 +206,7 @@ void draw(Playback& playback, Grid& grid, AlgoHistory& history) {
 
     const auto& result = playback.result();
 
-    ImGui::Text("Algorithm: %s", result.algorithm_name);
+    ImGui::Text("Algorithm: %s", result.algorithm_name.c_str());
 
     if (result.compute_time_ms > 0.0F) {
         ImGui::Text("Compute time: %.2f ms", static_cast<double>(result.compute_time_ms));
@@ -232,12 +231,13 @@ void draw(Playback& playback, Grid& grid, AlgoHistory& history) {
             ImGui::Text("Path length: %d steps", static_cast<int>(result.path.size()) - 1);
             ImGui::Text("Path cost: %.0f", static_cast<double>(result.path_cost));
 
-            if (std::string_view(result.algorithm_name) == "BFS") {
+            if (result.algorithm_name == "BFS") {
                 ImGui::TextColored(ImVec4(1.0F, 0.8F, 0.3F, 1.0F),
                                    "BFS optimizes for fewest hops, not lowest cost");
             } else {
                 ImGui::TextColored(ImVec4(0.3F, 0.8F, 0.4F, 1.0F),
-                                   "%s optimizes for lowest total cost", result.algorithm_name);
+                                   "%s optimizes for lowest total cost",
+                                   result.algorithm_name.c_str());
             }
         }
 

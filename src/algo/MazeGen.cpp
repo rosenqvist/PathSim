@@ -105,49 +105,57 @@ void carve_maze(Grid& grid, float passage_rate, std::mt19937& rng) {
 }
 
 void add_terrain(Grid& grid, const GenerateConfig& config, std::mt19937& rng) {
-    {
-        int w = grid.width();
-        int h = grid.height();
+    int w = grid.width();
+    int h = grid.height();
 
-        // Count empty cells to know how many to cover
-        int total_empty = 0;
-        for (int y = 0; y < h; ++y) {
-            for (int x = 0; x < w; ++x) {
-                Vec2i pos{.x = x, .y = y};
-                if (!grid.is_wall(pos) && pos != grid.start() && pos != grid.end()) {
-                    ++total_empty;
-                }
+    // Count empty cells to know how many to cover
+    int total_empty = 0;
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            Vec2i pos{.x = x, .y = y};
+            if (!grid.is_wall(pos) && pos != grid.start() && pos != grid.end()) {
+                ++total_empty;
             }
         }
+    }
 
-        int target = static_cast<int>(config.weight_coverage * static_cast<float>(total_empty));
-        int placed = 0;
+    int target = static_cast<int>(config.weight_coverage * static_cast<float>(total_empty));
+    int placed = 0;
 
-        std::uniform_int_distribution<int> x_dist(0, w - 1);
-        std::uniform_int_distribution<int> y_dist(0, h - 1);
-        std::uniform_int_distribution<int> size_dist(3, 8);
-        std::uniform_int_distribution<int> weight_dist(config.min_weight, config.max_weight);
+    std::uniform_int_distribution<int> x_dist(0, w - 1);
+    std::uniform_int_distribution<int> y_dist(0, h - 1);
+    std::uniform_int_distribution<int> size_dist(3, 8);
+    std::uniform_int_distribution<int> weight_dist(config.min_weight, config.max_weight);
 
-        // Place rectangular weight clusters until we hit coverage target
-        // prevent potential inifinte loop
-        int attempts = 0;
-        int max_attempts = target * 10;
-        while (placed < target && attempts < max_attempts) {
-            ++attempts;
-            int cx = x_dist(rng);
-            int cy = y_dist(rng);
-            int rw = size_dist(rng);
-            int rh = size_dist(rng);
-            int weight = weight_dist(rng);
+    // Place rectangular weight clusters at random positions until we hit
+    // the coverage target. Each cluster is 3-8 cells wide/tall so one
+    // placement can cover many cells at once.
+    //
+    // Safety bound: we cap target * 10 attempts to prevent an infinite loop.
+    // This can happen when most of the grid is already walled (MazeTerrain
+    // mode) and the remaining empty cells are hard to hit randomly. The 10x
+    // multiplier is generous enough that we almost always reach full coverage
+    // on typical grids (each attempt covers a 3-8 cell rectangle, so even
+    // with overlap and wall collisions we average several cells placed per
+    // attempt). If we do hit the cap, the grid just has slightly less terrain
+    // coverage which is fine.
+    int attempts{0};
+    int max_attempts = target * 10;
+    while (placed < target && attempts < max_attempts) {
+        ++attempts;
+        int cx = x_dist(rng);
+        int cy = y_dist(rng);
+        int rw = size_dist(rng);
+        int rh = size_dist(rng);
+        int weight = weight_dist(rng);
 
-            for (int y = cy; y < std::min(cy + rh, h); ++y) {
-                for (int x = cx; x < std::min(cx + rw, w); ++x) {
-                    Vec2i pos{.x = x, .y = y};
-                    if (!grid.is_wall(pos) && pos != grid.start() && pos != grid.end()) {
-                        if (grid.weight(pos) == 1) {
-                            grid.set_weight(pos, weight);
-                            ++placed;
-                        }
+        for (int y = cy; y < std::min(cy + rh, h); ++y) {
+            for (int x = cx; x < std::min(cx + rw, w); ++x) {
+                Vec2i pos{.x = x, .y = y};
+                if (!grid.is_wall(pos) && pos != grid.start() && pos != grid.end()) {
+                    if (grid.weight(pos) == 1) {
+                        grid.set_weight(pos, weight);
+                        ++placed;
                     }
                 }
             }

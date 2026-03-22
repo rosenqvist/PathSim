@@ -51,7 +51,7 @@ if(EMSCRIPTEN)
     )
     target_compile_options(imgui_em PRIVATE -Wno-everything)
 
-   add_executable(PathSim
+    add_executable(PathSim
         src/main.cpp
         src/ui/GridRenderer.cpp
         src/ui/MenuBar.cpp
@@ -74,7 +74,6 @@ if(EMSCRIPTEN)
         --shell-file ${CMAKE_SOURCE_DIR}/web/shell.html
         --embed-file ${CMAKE_SOURCE_DIR}/resources/fonts/Roboto-Medium.ttf@/resources/fonts/Roboto-Medium.ttf
     )
-    
 
 else()
     # --- Desktop build: use vcpkg packages ---
@@ -90,9 +89,9 @@ else()
         src/ui/KeyboardShortcuts.cpp
     )
     target_compile_options(PathSim PRIVATE
-    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
-    $<$<CXX_COMPILER_ID:MSVC>:/W4>
-    $<$<AND:$<NOT:$<CXX_COMPILER_ID:MSVC>>,$<CONFIG:Release>>:-O3>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
+        $<$<CXX_COMPILER_ID:MSVC>:/W4>
+        $<$<AND:$<NOT:$<CXX_COMPILER_ID:MSVC>>,$<CONFIG:Release>>:-O3>
     )
     target_link_libraries(PathSim
         PRIVATE
@@ -112,22 +111,22 @@ else()
     find_package(Catch2 3 CONFIG REQUIRED)
     enable_testing()
 
-add_executable(pathsim_tests
-    tests/grid_tests.cpp
-    tests/bfs_tests.cpp
-    tests/dijkstra_tests.cpp
-    tests/astar_tests.cpp
-    tests/playback_tests.cpp
-    tests/mazegen_tests.cpp
-    tests/waypoint_tests.cpp
-    tests/multipath_tests.cpp
-    tests/diagonal_tests.cpp
-    tests/oneway_tests.cpp
-)
+    add_executable(pathsim_tests
+        tests/grid_tests.cpp
+        tests/bfs_tests.cpp
+        tests/dijkstra_tests.cpp
+        tests/astar_tests.cpp
+        tests/playback_tests.cpp
+        tests/mazegen_tests.cpp
+        tests/waypoint_tests.cpp
+        tests/multipath_tests.cpp
+        tests/diagonal_tests.cpp
+        tests/oneway_tests.cpp
+    )
     target_compile_options(pathsim_tests PRIVATE
-    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wall -Wextra>
-    $<$<CXX_COMPILER_ID:MSVC>:/W4>
-)
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra>
+        $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    )
     target_link_libraries(pathsim_tests
         PRIVATE
             pathsim_core

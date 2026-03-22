@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/pathsim_logo.svg" alt="PathSim logo" width="720">
+  <img src="docs/pathsim_logo.svg" alt="PathSim logo" width="1080">
   <br><br>
   <a href="https://github.com/rosenqvist/PathSim/actions/workflows/ci.yml"><img src="https://github.com/rosenqvist/PathSim/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/rosenqvist/PathSim/releases"><img src="https://img.shields.io/github/v/release/rosenqvist/PathSim" alt="Release"></a>
@@ -17,7 +17,7 @@ Try it out: [rosenqvist.github.io/PathSim](https://rosenqvist.github.io/PathSim/
 |---------|-------------|
 | **Three algorithms** | BFS, Dijkstra's, and A* with Run All to compare side by side |
 | **Grid tools** | Walls, weighted cells (1–9), impassable cells, one-way cells, waypoints |
-| **Diagonal movement** | Eight-direction movement with corner-cutting prevention |
+| **Diagonal movement** | 8-directional movement with corner-cutting prevention |
 | **Maze generation** | Maze, Terrain, and Maze + Terrain modes that highlight algorithm differences |
 | **Playback controls** | Step-by-step, pause, resume, adjustable speed |
 | **Heatmap overlay** | Visualize exploration order from early (dark blue) to late (bright cyan) |
@@ -86,7 +86,7 @@ The three maze generation modes are designed to highlight these differences. Pur
 
 ## What I'd Do Differently
 
-If I started over I'd separate core logic from UI on day one instead of refactoring it in later. The Emscripten port would have been much simpler with that boundary already in place. I'd also plan for cross-platform builds earlier since retrofitting the main loop for Emscripten meant rewriting it entirely to work with the browser's frame callback.
+If I started over I'd separate core logic from UI on day one instead of refactoring it in later. The Emscripten port would have been much simpler with that boundary already in place. I'd also plan for cross-platform builds earlier since adapting the main loop for Emscripten meant rewriting it entirely to work with the browser's frame callback. 
 
 ## Building
 

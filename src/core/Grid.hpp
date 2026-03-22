@@ -9,6 +9,16 @@
 
 namespace pathsim {
 
+// Stack-allocated container for neighbor positions returned by Grid::neighbors().
+//
+// Holds up to 8 neighbors (4 cardinal + 4 diagonal) in a fixed-size array.
+// Only the first `count` elements are valid. begin() and end() are defined
+// to iterate exactly the valid range, so this will work in range-for loops:
+//
+//   for (const auto& neighbor : grid.neighbors(pos)) { ... }
+//
+// Using a fixed array avoids heap allocation on every neighbor lookup, which
+// matters because this function is called for every node the algorithms would eventually visit.
 struct Neighbors {
     std::array<Vec2i, 8> data{};
     int count{};

@@ -198,15 +198,24 @@ void draw_view_menu(ViewSettings& view) {
     ImGui::EndMenu();
 }
 
-void draw_diagonal_status(const Grid& grid) {
+void draw_diagonal_status(Grid& grid, float menus_end_x) {
     const char* label = grid.allow_diagonals() ? "Diagonal Movement: On" : "Diagonal Movement: Off";
-    float text_w = ImGui::CalcTextSize(label).x;
-    float bar_w = ImGui::GetMainViewport()->Size.x;
-    ImGui::SameLine((bar_w * 0.35F) - (text_w * 0.5F));
+    float pos_x = menus_end_x + 20.0F;
+    ImGui::SameLine(pos_x);
 
     ImVec4 color =
         grid.allow_diagonals() ? ImVec4(0.3F, 0.8F, 0.4F, 0.9F) : ImVec4(0.6F, 0.6F, 0.6F, 0.5F);
-    ImGui::TextColored(color, "%s", label);
+
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1, 1, 1, 0.1F));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.2F));
+    ImGui::PushStyleColor(ImGuiCol_Text, color);
+
+    if (ImGui::SmallButton(label)) {
+        grid.set_allow_diagonals(!grid.allow_diagonals());
+    }
+
+    ImGui::PopStyleColor(4);
 }
 
 void draw_active_tool(const GridRenderer& renderer) {
@@ -601,7 +610,8 @@ void draw(Grid& grid, GridRenderer& renderer, Playback& playback, AlgoHistory& h
     draw_view_menu(view);
     draw_stats_menu(playback, grid, history);
     draw_settings_menu(grid, playback, history);
-    draw_diagonal_status(grid);
+    float menus_end_x = ImGui::GetCursorPosX();
+    draw_diagonal_status(grid, menus_end_x);
     draw_active_tool(renderer);
     draw_hover_info(grid, renderer);
 

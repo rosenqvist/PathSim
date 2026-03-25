@@ -80,6 +80,10 @@ class GridRenderer {
                                   float y_min, float x_max, float y_max) const;
     void draw_direction_badge(ImDrawList* draw_list, CellDirection dir, ImVec2 top_right) const;
     static void draw_cell_tooltip(const Grid& grid, Vec2i cell);
+    static void draw_path_dots(ImDrawList* draw_list, const std::vector<ImVec2>& points,
+                               float thickness);
+    static void draw_path_arrowheads(ImDrawList* draw_list, const std::vector<ImVec2>& points,
+                                     float thickness);
     void draw_hover(const Grid& grid, const ViewSettings& view);
     bool handle_drag(Grid& grid, Vec2i mouse_pos);
 

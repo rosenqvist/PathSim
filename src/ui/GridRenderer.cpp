@@ -467,6 +467,100 @@ void GridRenderer::draw(const Grid& grid, const ViewSettings& view,
     ImGui::End();
 }
 
+void GridRenderer::draw_path_dots(ImDrawList* draw_list, const std::vector<ImVec2>& points,
+                                  float thickness) {
+    float spacing = thickness * 2.8F;
+    float max_radius = thickness * 0.4F;
+    float speed = spacing * 1.0F;
+    float time_offset = std::fmod(static_cast<float>(ImGui::GetTime()) * speed, spacing);
+
+    // Number of fading trail dots behind each main dot
+    constexpr int kTrailCount = 3;
+    float trail_gap = spacing * 0.15F;
+
+    float accumulated = time_offset;
+
+    for (std::size_t i = 0; i + 1 < points.size(); ++i) {
+        float dx = points[i + 1].x - points[i].x;
+        float dy = points[i + 1].y - points[i].y;
+        float seg_len = std::sqrt((dx * dx) + (dy * dy));
+        if (seg_len < 0.001F) {
+            continue;
+        }
+
+        float nx = dx / seg_len;
+        float ny = dy / seg_len;
+
+        while (accumulated < seg_len) {
+            // Pulse dot that grows and brightens then shrinks and dims
+            float frac = (accumulated / spacing) - std::floor(accumulated / spacing);
+            float pulse = 0.5F + (0.5F * std::sin(frac * 3.14159F));
+            float radius = max_radius * (0.5F + (0.5F * pulse));
+            auto alpha = static_cast<uint8_t>(140.0F + (pulse * 115.0F));
+
+            // Main dot
+            float x = points[i].x + (nx * accumulated);
+            float y = points[i].y + (ny * accumulated);
+            draw_list->AddCircleFilled(ImVec2{x, y}, radius, IM_COL32(255, 255, 255, alpha));
+
+            // Trail dots behind the main dot (fade out further back)
+            for (int t = 1; t <= kTrailCount; ++t) {
+                float trail_dist = static_cast<float>(t) * trail_gap;
+                float tx = x - (nx * trail_dist);
+                float ty = y - (ny * trail_dist);
+
+                float fade = 1.0F - (static_cast<float>(t) / static_cast<float>(kTrailCount + 1));
+                float tr = radius * fade * 0.8F;
+                auto ta = static_cast<uint8_t>(static_cast<float>(alpha) * fade * 0.5F);
+
+                if (tr > 0.5F && ta > 10) {
+                    draw_list->AddCircleFilled(ImVec2{tx, ty}, tr, IM_COL32(255, 240, 180, ta));
+                }
+            }
+
+            accumulated += spacing;
+        }
+        accumulated -= seg_len;
+    }
+}
+
+void GridRenderer::draw_path_arrowheads(ImDrawList* draw_list, const std::vector<ImVec2>& points,
+                                        float thickness) {
+    ImU32 arrow_col = IM_COL32(255, 255, 255, 230);
+    int spacing = std::max(3, static_cast<int>(points.size()) / 10);
+    float arrow_size = thickness * 2.5F;
+
+    for (std::size_t i = spacing; i + 1 < points.size(); i += static_cast<std::size_t>(spacing)) {
+        ImVec2 prev = points[i - 1];
+        ImVec2 curr = points[i];
+
+        // Direction vector
+        float dx = curr.x - prev.x;
+        float dy = curr.y - prev.y;
+        float len = std::sqrt((dx * dx) + (dy * dy));
+
+        if (len < 0.001F) {
+            continue;
+        }
+
+        dx /= len;
+        dy /= len;
+
+        // Perpendicular
+        float px = -dy;
+        float py = dx;
+
+        // Triangle tip ahead of current point and two wings behind
+        ImVec2 tip{curr.x + (dx * arrow_size * 0.5F), curr.y + (dy * arrow_size * 0.5F)};
+        ImVec2 left{curr.x - (dx * arrow_size * 0.5F) + (px * arrow_size * 0.5F),
+                    curr.y - (dy * arrow_size * 0.5F) + (py * arrow_size * 0.5F)};
+        ImVec2 right{curr.x - (dx * arrow_size * 0.5F) - (px * arrow_size * 0.5F),
+                     curr.y - (dy * arrow_size * 0.5F) - (py * arrow_size * 0.5F)};
+
+        draw_list->AddTriangleFilled(tip, left, right, arrow_col);
+    }
+}
+
 void GridRenderer::draw_path_overlay(ImDrawList* draw_list, const std::vector<Vec2i>& path,
                                      bool show_arrows) const {
     if (path.size() < 2 || cell_w_ <= 0.0F || cell_h_ <= 0.0F) {
@@ -477,9 +571,14 @@ void GridRenderer::draw_path_overlay(ImDrawList* draw_list, const std::vector<Ve
     float half_h = cell_h_ * 0.5F;
     float thickness = std::min(cell_w_, cell_h_) * 0.2F;
 
-    ImU32 line_col = IM_COL32(255, 220, 50, 220);
+    // Breathing glow which makes the outer glow pulse gently
+    float breath = 0.5F + (0.5F * std::sin(static_cast<float>(ImGui::GetTime()) * 2.0F));
+    auto glow_alpha = static_cast<uint8_t>(25.0F + (breath * 25.0F));
+    ImU32 glow_col = IM_COL32(255, 200, 30, glow_alpha);
+
     ImU32 outline_col = IM_COL32(40, 40, 40, 160);
-    ImU32 arrow_col = IM_COL32(255, 255, 255, 230);
+    ImU32 line_col = IM_COL32(255, 220, 50, 220);
+    ImU32 highlight_col = IM_COL32(255, 255, 200, 90);
 
     std::vector<ImVec2> points;
     points.reserve(path.size());
@@ -489,52 +588,41 @@ void GridRenderer::draw_path_overlay(ImDrawList* draw_list, const std::vector<Ve
         points.emplace_back(cx, cy);
     }
 
-    // Dark outline then bright line
+    // Layer 1: Breathing glow
+    draw_list->AddPolyline(points.data(), static_cast<int>(points.size()), glow_col, 0,
+                           thickness * 3.5F);
+
+    // Layer 2: Dark outline
     draw_list->AddPolyline(points.data(), static_cast<int>(points.size()), outline_col, 0,
                            thickness + 2.0F);
+
+    // Layer 3: Main gold line
     draw_list->AddPolyline(points.data(), static_cast<int>(points.size()), line_col, 0, thickness);
 
-    // Arrowheads with some spacing
+    // Layer 4: Thin bright inner highlight for 3d effect
+    draw_list->AddPolyline(points.data(), static_cast<int>(points.size()), highlight_col, 0,
+                           thickness * 0.3F);
+
+    // Animated dots with trailing fade
+    draw_path_dots(draw_list, points, thickness);
+
+    // Static arrowheads
     if (show_arrows && points.size() > 2) {
-        int spacing = std::max(3, static_cast<int>(points.size()) / 10);
-        float arrow_size = thickness * 2.5F;
-
-        for (std::size_t i = spacing; i + 1 < points.size();
-             i += static_cast<std::size_t>(spacing)) {
-            ImVec2 prev = points[i - 1];
-            ImVec2 curr = points[i];
-
-            // Direction vector
-            float dx = curr.x - prev.x;
-            float dy = curr.y - prev.y;
-            float len = std::sqrt((dx * dx) + (dy * dy));
-
-            if (len < 0.001F) {
-                continue;
-            }
-
-            dx /= len;
-            dy /= len;
-
-            // Perpendicular
-            float px = -dy;
-            float py = dx;
-
-            // Triangle tip ahead of current point and two wings behind
-            ImVec2 tip{curr.x + (dx * arrow_size * 0.5F), curr.y + (dy * arrow_size * 0.5F)};
-            ImVec2 left{curr.x - (dx * arrow_size * 0.5F) + (px * arrow_size * 0.5F),
-                        curr.y - (dy * arrow_size * 0.5F) + (py * arrow_size * 0.5F)};
-            ImVec2 right{curr.x - (dx * arrow_size * 0.5F) - (px * arrow_size * 0.5F),
-                         curr.y - (dy * arrow_size * 0.5F) - (py * arrow_size * 0.5F)};
-
-            draw_list->AddTriangleFilled(tip, left, right, arrow_col);
-        }
+        draw_path_arrowheads(draw_list, points, thickness);
     }
 
-    // Cap the line ends
-    float cap_radius = thickness * 0.6F;
-    draw_list->AddCircleFilled(points.front(), cap_radius, line_col);
-    draw_list->AddCircleFilled(points.back(), cap_radius, line_col);
+    // Colored end caps matching start (green) and end (red) nodes
+    float cap_radius = thickness * 1.0F;
+
+    ImU32 start_cap = IM_COL32(0, 200, 80, 240);
+    ImU32 end_cap = IM_COL32(220, 50, 50, 240);
+    ImU32 cap_ring = IM_COL32(255, 255, 255, 160);
+
+    draw_list->AddCircleFilled(points.front(), cap_radius, start_cap);
+    draw_list->AddCircle(points.front(), cap_radius, cap_ring, 0, 1.5F);
+
+    draw_list->AddCircleFilled(points.back(), cap_radius, end_cap);
+    draw_list->AddCircle(points.back(), cap_radius, cap_ring, 0, 1.5F);
 }
 
 bool GridRenderer::handle_drag(Grid& grid, Vec2i mouse_pos) {
@@ -575,10 +663,10 @@ bool GridRenderer::handle_drag(Grid& grid, Vec2i mouse_pos) {
     Vec2i other = is_start ? grid.end() : grid.start();
 
     if (mouse_pos != other && mouse_pos != prev_drag_pos_) {
-        // 1. Save the destination before we decide to overwrite it
+        // 1. We save the destination before we decide to overwrite it
         CellData dest_backup = grid.cell_data(mouse_pos);
 
-        // 2. Move start/end to new position
+        // 2. Then we move start/end to new position
         if (is_start) {
             grid.set_start(mouse_pos);
         } else {
@@ -655,7 +743,7 @@ void GridRenderer::handle_input(Grid& grid, bool editing_enabled) {
         }
     }
 
-    // Right-click will always erase regardless of active tool
+    // Right-click will always erase regardless of which tool is active
     if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
         grid.set_wall(mouse_pos, false);
         grid.set_weight(mouse_pos, 1);

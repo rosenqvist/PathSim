@@ -154,6 +154,27 @@ void Grid::restore_cell(Vec2i pos, const CellData& data) {
     }
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+void Grid::move_waypoint_to_index(int from_index, int to_index) {
+    auto from = static_cast<std::size_t>(from_index);
+    auto to = static_cast<std::size_t>(to_index);
+    if (from >= waypoints_.size() || to >= waypoints_.size() || from == to) {
+        return;
+    }
+
+    Vec2i wp = waypoints_[from];
+    waypoints_.erase(waypoints_.begin() + static_cast<std::ptrdiff_t>(from));
+    waypoints_.insert(waypoints_.begin() + static_cast<std::ptrdiff_t>(to), wp);
+}
+
+void Grid::set_ordered_waypoints(bool ordered) {
+    ordered_waypoints_ = ordered;
+}
+
+bool Grid::ordered_waypoints() const {
+    return ordered_waypoints_;
+}
+
 CellDirection Grid::direction(Vec2i pos) const {
     assert(is_valid(pos));
     return directions_[index_at(pos)];

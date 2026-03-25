@@ -25,7 +25,7 @@ enum class DragTarget : std::uint8_t { None, Start, End };
 
 class GridRenderer {
   public:
-    void draw(const Grid& grid, const ViewSettings& view = {},
+    void draw(Grid& grid, const ViewSettings& view = {},
               const PathResult* finished_result = nullptr);
     void handle_input(Grid& grid, bool editing_enabled = true);
 
@@ -61,6 +61,9 @@ class GridRenderer {
     Vec2i hovered_cell_{.x = -1, .y = -1};
     bool has_hover_{false};
 
+    int renumber_waypoint_index_{-1};
+    bool renumber_open_requested_{false};
+
     void draw_weight_label(ImDrawList* draw_list, const Grid& grid, Vec2i cell, float x_min,
                            float y_min) const;
     void draw_impassable(ImDrawList* draw_list, float x_min, float y_min, float x_max,
@@ -86,6 +89,8 @@ class GridRenderer {
                                      float thickness);
     void draw_hover(const Grid& grid, const ViewSettings& view);
     bool handle_drag(Grid& grid, Vec2i mouse_pos);
+    void handle_waypoint_renumber(Grid& grid, Vec2i mouse_pos);
+    void draw_waypoint_renumber_popup(Grid& grid);
 
     CellDirection active_direction_ = CellDirection::East;
 };

@@ -145,8 +145,13 @@ void GridRenderer::draw_cell_tooltip(const Grid& grid, Vec2i cell) {
         const auto& wps = grid.waypoints();
         for (std::size_t i = 0; i < wps.size(); ++i) {
             if (wps[i] == cell) {
-                ImGui::TextColored(ImVec4(1.0F, 0.6F, 0.0F, 1.0F), "Waypoint #%d",
-                                   static_cast<int>(i + 1));
+                if (grid.ordered_waypoints()) {
+                    ImGui::TextColored(ImVec4(1.0F, 0.6F, 0.0F, 1.0F), "Waypoint #%d",
+                                       static_cast<int>(i + 1));
+                    ImGui::TextColored(ImVec4(0.6F, 0.6F, 0.6F, 0.8F), "Middle-click to renumber");
+                } else {
+                    ImGui::TextColored(ImVec4(1.0F, 0.6F, 0.0F, 1.0F), "Waypoint (unordered)");
+                }
                 break;
             }
         }
@@ -269,48 +274,75 @@ void GridRenderer::draw_waypoint(ImDrawList* draw_list, const Grid& grid, Vec2i 
             continue;
         }
 
-        std::array<char, 4> label{};
-        std::snprintf(label.data(), label.size(), "%d", static_cast<int>(i + 1));
-        ImVec2 text_size = ImGui::CalcTextSize(label.data());
+        bool ordered = grid.ordered_waypoints();
 
-        // Fall back to number only on very small cells
         if (cell_w_ < 20.0F || cell_h_ < 20.0F) {
-            float text_x = x_min + ((cell_w_ - text_size.x) * 0.5F);
-            float text_y = y_min + ((cell_h_ - text_size.y) * 0.5F);
-            draw_list->AddText(ImVec2{text_x, text_y}, IM_COL32(255, 255, 255, 255), label.data());
+            if (ordered) {
+                std::array<char, 4> label{};
+                std::snprintf(label.data(), label.size(), "%d", static_cast<int>(i + 1));
+                ImVec2 text_size = ImGui::CalcTextSize(label.data());
+                float text_x = x_min + ((cell_w_ - text_size.x) * 0.5F);
+                float text_y = y_min + ((cell_h_ - text_size.y) * 0.5F);
+                draw_list->AddText(ImVec2{text_x, text_y}, IM_COL32(255, 255, 255, 255),
+                                   label.data());
+            } else {
+                // Unordered should be a  small diamond
+                float cx = x_min + (cell_w_ * 0.5F);
+                float cy = y_min + (cell_h_ * 0.5F);
+                float r = std::min(cell_w_, cell_h_) * 0.25F;
+                draw_list->AddQuadFilled(ImVec2{cx, cy - r}, ImVec2{cx + r, cy}, ImVec2{cx, cy + r},
+                                         ImVec2{cx - r, cy}, IM_COL32(255, 255, 255, 230));
+            }
             break;
         }
 
-        // Total content width: pole + gap + flag width + gap + number
-        float flag_w = cell_w_ * 0.20F;
-        float flag_h = cell_h_ * 0.25F;
-        float gap = cell_w_ * 0.05F;
-        float pole_thickness = 2.0F;
-        float content_w = pole_thickness + gap + flag_w + gap + text_size.x;
+        if (ordered) {
+            // Numbered flag marker
+            std::array<char, 4> label{};
+            std::snprintf(label.data(), label.size(), "%d", static_cast<int>(i + 1));
+            ImVec2 text_size = ImGui::CalcTextSize(label.data());
 
-        // Make sure everything is centered horizontally
-        float start_x = x_min + ((cell_w_ - content_w) * 0.5F);
-        float cy = y_min + (cell_h_ * 0.5F);
+            // Total content width is: pole + gap + flag width + gap + number
+            float flag_w = cell_w_ * 0.20F;
+            float flag_h = cell_h_ * 0.25F;
+            float gap = cell_w_ * 0.05F;
+            float pole_thickness = 2.0F;
+            float content_w = pole_thickness + gap + flag_w + gap + text_size.x;
 
-        // Add Flag pole
-        float pole_x = start_x;
-        float pole_top = cy - (cell_h_ * 0.28F);
-        float pole_bottom = cy + (cell_h_ * 0.24F);
-        draw_list->AddLine(ImVec2{pole_x, pole_top}, ImVec2{pole_x, pole_bottom},
-                           IM_COL32(255, 255, 255, 220), pole_thickness);
+            // Make sure everything is centered horizontally
+            float start_x = x_min + ((cell_w_ - content_w) * 0.5F);
+            float cy = y_min + (cell_h_ * 0.5F);
 
-        // Add Flag triangle
-        float flag_left = pole_x + (pole_thickness * 0.5F);
-        ImVec2 flag_top{flag_left, pole_top};
-        ImVec2 flag_right{flag_left + flag_w, pole_top + (flag_h * 0.5F)};
-        ImVec2 flag_bottom{flag_left, pole_top + flag_h};
-        draw_list->AddTriangleFilled(flag_top, flag_right, flag_bottom,
-                                     IM_COL32(255, 255, 255, 230));
+            // Add Flag pole
+            float pole_x = start_x;
+            float pole_top = cy - (cell_h_ * 0.28F);
+            float pole_bottom = cy + (cell_h_ * 0.24F);
+            draw_list->AddLine(ImVec2{pole_x, pole_top}, ImVec2{pole_x, pole_bottom},
+                               IM_COL32(255, 255, 255, 220), pole_thickness);
 
-        // Add number after the flag
-        float text_x = flag_left + flag_w + gap;
-        float text_y = cy - (text_size.y * 0.5F);
-        draw_list->AddText(ImVec2{text_x, text_y}, IM_COL32(255, 255, 255, 255), label.data());
+            // Add Flag triangle
+            float flag_left = pole_x + (pole_thickness * 0.5F);
+            ImVec2 flag_top{flag_left, pole_top};
+            ImVec2 flag_right{flag_left + flag_w, pole_top + (flag_h * 0.5F)};
+            ImVec2 flag_bottom{flag_left, pole_top + flag_h};
+            draw_list->AddTriangleFilled(flag_top, flag_right, flag_bottom,
+                                         IM_COL32(255, 255, 255, 230));
+
+            // Add number after the flag
+            float text_x = flag_left + flag_w + gap;
+            float text_y = cy - (text_size.y * 0.5F);
+            draw_list->AddText(ImVec2{text_x, text_y}, IM_COL32(255, 255, 255, 255), label.data());
+        } else {
+            // Unordered is a diamond marker with no number
+            float cx = x_min + (cell_w_ * 0.5F);
+            float cy = y_min + (cell_h_ * 0.5F);
+            float r = std::min(cell_w_, cell_h_) * 0.28F;
+
+            draw_list->AddQuadFilled(ImVec2{cx, cy - r}, ImVec2{cx + r, cy}, ImVec2{cx, cy + r},
+                                     ImVec2{cx - r, cy}, IM_COL32(255, 255, 255, 230));
+            draw_list->AddQuad(ImVec2{cx, cy - r}, ImVec2{cx + r, cy}, ImVec2{cx, cy + r},
+                               ImVec2{cx - r, cy}, IM_COL32(255, 160, 0, 180), 1.5F);
+        }
 
         break;
     }
@@ -379,8 +411,7 @@ void GridRenderer::draw_cell_overlays(ImDrawList* draw_list, const Grid& grid, V
     }
 }
 
-void GridRenderer::draw(const Grid& grid, const ViewSettings& view,
-                        const PathResult* finished_result) {
+void GridRenderer::draw(Grid& grid, const ViewSettings& view, const PathResult* finished_result) {
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
     ImGui::SetNextWindowSize(viewport->WorkSize);
@@ -462,6 +493,8 @@ void GridRenderer::draw(const Grid& grid, const ViewSettings& view,
 
     // Mouse Hover highlight
     draw_hover(grid, view);
+    // renumber waypoints
+    draw_waypoint_renumber_popup(grid);
 
     ImGui::Dummy(available);
     ImGui::End();
@@ -686,6 +719,51 @@ bool GridRenderer::handle_drag(Grid& grid, Vec2i mouse_pos) {
     return true;
 }
 
+void GridRenderer::handle_waypoint_renumber(Grid& grid, Vec2i mouse_pos) {
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Middle) && grid.is_valid(mouse_pos) &&
+        grid.at(mouse_pos) == CellState::Waypoint) {
+        const auto& wps = grid.waypoints();
+        for (int i = 0; i < static_cast<int>(wps.size()); ++i) {
+            if (wps[i] == mouse_pos) {
+                renumber_waypoint_index_ = i;
+                renumber_open_requested_ = true;
+                break;
+            }
+        }
+    }
+}
+
+void GridRenderer::draw_waypoint_renumber_popup(Grid& grid) {
+    if (renumber_open_requested_) {
+        ImGui::OpenPopup("RenumberWaypoint");
+        renumber_open_requested_ = false;
+    }
+
+    if (!ImGui::BeginPopup("RenumberWaypoint")) {
+        renumber_waypoint_index_ = -1;
+        return;
+    }
+
+    int wp_count = static_cast<int>(grid.waypoints().size());
+    ImGui::Text("Move to position:");
+    ImGui::Separator();
+
+    for (int i = 0; i < wp_count; ++i) {
+        std::array<char, 16> label{};
+        std::snprintf(label.data(), label.size(), "#%d", i + 1);
+
+        if (i == renumber_waypoint_index_) {
+            ImGui::TextColored(ImVec4(1.0F, 0.6F, 0.0F, 1.0F), "%s (current)", label.data());
+        } else if (ImGui::MenuItem(label.data())) {
+            grid.move_waypoint_to_index(renumber_waypoint_index_, i);
+            renumber_waypoint_index_ = -1;
+            ImGui::CloseCurrentPopup();
+        }
+    }
+
+    ImGui::EndPopup();
+}
+
 void GridRenderer::handle_input(Grid& grid, bool editing_enabled) {
     // Always check for drag release even when cursor is off-grid
     if (handle_drag(grid, screen_to_grid(ImGui::GetMousePos()))) {
@@ -708,6 +786,9 @@ void GridRenderer::handle_input(Grid& grid, bool editing_enabled) {
     if (!grid.is_valid(mouse_pos)) {
         return;
     }
+
+    // Middle-click renumbers waypoints
+    handle_waypoint_renumber(grid, mouse_pos);
 
     // Drag takes priority over normal tool handling
     if (drag_target_ != DragTarget::None) {

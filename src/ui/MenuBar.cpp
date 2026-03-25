@@ -141,6 +141,15 @@ void draw_settings_menu(Grid& grid, Playback& playback, AlgoHistory& history) {
         grid.set_allow_diagonals(diag);
     }
 
+    bool ordered = grid.ordered_waypoints();
+    if (ImGui::Checkbox("Ordered Waypoints", &ordered)) {
+        grid.set_ordered_waypoints(ordered);
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("When on, waypoints are visited in order (1 -> 2 -> 3).\n"
+                          "When off, the algorithm finds the cheapest visit order.");
+    }
+
     ImGui::Separator();
 
     static int pending_width = 40;

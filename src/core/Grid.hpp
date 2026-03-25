@@ -73,6 +73,14 @@ class Grid {
     [[nodiscard]] const std::vector<Vec2i>& waypoints() const;
     void clear_waypoints();
 
+    // Move a waypoint from one index to another (for renumbering)
+    void move_waypoint_to_index(int from_index, int to_index);
+
+    // When true, waypoints visited in order (1 -> 2 -> 3).
+    // When false algo finds the cheapest visiting order
+    void set_ordered_waypoints(bool ordered);
+    [[nodiscard]] bool ordered_waypoints() const;
+
     // Save or restore a cell's full state to prevent destructive dragging of start/end nodes.
     [[nodiscard]] CellData cell_data(Vec2i pos) const;
     void restore_cell(Vec2i pos, const CellData& data);
@@ -95,6 +103,7 @@ class Grid {
     Vec2i end_{};
     std::vector<Vec2i> waypoints_;
     bool allow_diagonals_{false};
+    bool ordered_waypoints_{true};
     std::vector<CellDirection> directions_;
 
     // unchecked in release, asserted in debug, all access needs to go through here

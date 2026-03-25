@@ -53,6 +53,7 @@ if(EMSCRIPTEN)
 
     add_executable(PathSim
         src/main.cpp
+        src/ui/Persistence.cpp
         src/ui/GridRenderer.cpp
         src/ui/MenuBar.cpp
         src/ui/StatsPanel.cpp
@@ -83,6 +84,7 @@ else()
 
     add_executable(PathSim
         src/main.cpp
+        src/ui/Persistence.cpp
         src/ui/GridRenderer.cpp
         src/ui/MenuBar.cpp
         src/ui/StatsPanel.cpp

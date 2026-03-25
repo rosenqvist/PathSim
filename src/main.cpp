@@ -3,6 +3,7 @@
 #include "ui/GridRenderer.hpp"
 #include "ui/KeyboardShortcuts.hpp"
 #include "ui/MenuBar.hpp"
+#include "ui/Persistence.hpp"
 #include "ui/StatsPanel.hpp"
 #include "ui/ViewSettings.hpp"
 
@@ -30,6 +31,7 @@ struct AppState {
     pathsim::AlgoHistory history;
     pathsim::ViewSettings view;
 
+    float save_timer{0.0F};
     AppState() : grid(40, 30) {}
 };
 
@@ -58,6 +60,14 @@ void main_loop(void* arg) {
     pathsim::stats_panel::draw(app->playback, app->grid, app->history);
 
     pathsim::keyboard_shortcuts::handle(app->grid, app->renderer, app->playback);
+
+    // Auto-save every 2 seconds
+    app->save_timer += ImGui::GetIO().DeltaTime;
+    if (app->save_timer >= 2.0F) {
+        app->save_timer = 0.0F;
+        auto data = pathsim::persistence::serialize(app->grid, app->view);
+        pathsim::persistence::save_to_storage(data);
+    }
 
     ImGui::Render();
 
@@ -134,6 +144,10 @@ int main() {
 
     AppState app;
     app.window = window;
+
+    // Restore previous session if available
+    auto saved = pathsim::persistence::load_from_storage();
+    pathsim::persistence::deserialize(saved, app.grid, app.view);
 
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop_arg(main_loop, &app, 0, true);

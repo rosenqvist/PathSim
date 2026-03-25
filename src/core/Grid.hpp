@@ -73,6 +73,10 @@ class Grid {
     [[nodiscard]] const std::vector<Vec2i>& waypoints() const;
     void clear_waypoints();
 
+    // Save or restore a cell's full state to prevent destructive dragging of start/end nodes.
+    [[nodiscard]] CellData cell_data(Vec2i pos) const;
+    void restore_cell(Vec2i pos, const CellData& data);
+
     // Resizes the grid, clears all state
     void resize(int width, int height);
 

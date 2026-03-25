@@ -537,8 +537,75 @@ void GridRenderer::draw_path_overlay(ImDrawList* draw_list, const std::vector<Ve
     draw_list->AddCircleFilled(points.back(), cap_radius, line_col);
 }
 
+bool GridRenderer::handle_drag(Grid& grid, Vec2i mouse_pos) {
+    // End drag if mouse released even when cursor is off-grid
+    if (drag_target_ != DragTarget::None && !ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+        drag_target_ = DragTarget::None;
+        prev_drag_pos_ = {.x = -1, .y = -1};
+        saved_drag_cell_ = {};
+    }
+
+    if (!grid.is_valid(mouse_pos)) {
+        return false;
+    }
+
+    // Begin drag if mouse just clicked on start or end
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        if (mouse_pos == grid.start()) {
+            drag_target_ = DragTarget::Start;
+            prev_drag_pos_ = mouse_pos;
+            saved_drag_cell_ = {};
+        } else if (mouse_pos == grid.end()) {
+            drag_target_ = DragTarget::End;
+            prev_drag_pos_ = mouse_pos;
+            saved_drag_cell_ = {};
+        }
+    }
+
+    if (drag_target_ == DragTarget::None) {
+        return false;
+    }
+
+    if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+        return false;
+    }
+
+    // Handle ongoing drag with cell preservation
+    bool is_start = drag_target_ == DragTarget::Start;
+    Vec2i other = is_start ? grid.end() : grid.start();
+
+    if (mouse_pos != other && mouse_pos != prev_drag_pos_) {
+        // 1. Save the destination before we decide to overwrite it
+        CellData dest_backup = grid.cell_data(mouse_pos);
+
+        // 2. Move start/end to new position
+        if (is_start) {
+            grid.set_start(mouse_pos);
+        } else {
+            grid.set_end(mouse_pos);
+        }
+
+        // 3. Restore previous position AFTER set_start/set_end
+        //    so it overwrites the Empty that was just written
+        if (prev_drag_pos_.x >= 0 && grid.is_valid(prev_drag_pos_)) {
+            grid.restore_cell(prev_drag_pos_, saved_drag_cell_);
+        }
+
+        saved_drag_cell_ = dest_backup;
+        prev_drag_pos_ = mouse_pos;
+    }
+
+    return true;
+}
+
 void GridRenderer::handle_input(Grid& grid, bool editing_enabled) {
-    // Implementation for handling input
+    // Always check for drag release even when cursor is off-grid
+    if (handle_drag(grid, screen_to_grid(ImGui::GetMousePos()))) {
+        if (!is_hovered_) {
+            return;
+        }
+    }
+
     if (!is_hovered_ || cell_w_ <= 0.0F || cell_h_ <= 0.0F) {
         return;
     }
@@ -554,31 +621,9 @@ void GridRenderer::handle_input(Grid& grid, bool editing_enabled) {
         return;
     }
 
-    // Begin drag if mouse just clicked on start or end
-    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-        bool drag_tools = active_tool_ == EditTool::Wall || active_tool_ == EditTool::Start ||
-                          active_tool_ == EditTool::End || active_tool_ == EditTool::Erase;
-
-        if (drag_tools) {
-            if (mouse_pos == grid.start()) {
-                drag_target_ = DragTarget::Start;
-            } else if (mouse_pos == grid.end()) {
-                drag_target_ = DragTarget::End;
-            }
-        }
-    }
-
-    // Handle ongoing drag
+    // Drag takes priority over normal tool handling
     if (drag_target_ != DragTarget::None) {
-        if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-            if (drag_target_ == DragTarget::Start && mouse_pos != grid.end()) {
-                grid.set_start(mouse_pos);
-            } else if (drag_target_ == DragTarget::End && mouse_pos != grid.start()) {
-                grid.set_end(mouse_pos);
-            }
-            return; // drag takes priority + skip normal tool handling
-        }
-        drag_target_ = DragTarget::None;
+        return;
     }
 
     if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
@@ -610,7 +655,7 @@ void GridRenderer::handle_input(Grid& grid, bool editing_enabled) {
         }
     }
 
-    // Right-click always erases regardless of active tool
+    // Right-click will always erase regardless of active tool
     if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
         grid.set_wall(mouse_pos, false);
         grid.set_weight(mouse_pos, 1);

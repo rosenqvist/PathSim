@@ -49,6 +49,8 @@ class GridRenderer {
 
     EditTool active_tool_ = EditTool::Wall;
     DragTarget drag_target_ = DragTarget::None;
+    Vec2i prev_drag_pos_{.x = -1, .y = -1};
+    CellData saved_drag_cell_{};
     float cell_w_{};
     float cell_h_{};
     ImVec2 grid_origin_ = {0.0F, 0.0F};
@@ -79,6 +81,7 @@ class GridRenderer {
     void draw_direction_badge(ImDrawList* draw_list, CellDirection dir, ImVec2 top_right) const;
     static void draw_cell_tooltip(const Grid& grid, Vec2i cell);
     void draw_hover(const Grid& grid, const ViewSettings& view);
+    bool handle_drag(Grid& grid, Vec2i mouse_pos);
 
     CellDirection active_direction_ = CellDirection::East;
 };

@@ -125,6 +125,35 @@ void Grid::clear_waypoints() {
     waypoints_.clear();
 }
 
+CellData Grid::cell_data(Vec2i pos) const {
+    assert(is_valid(pos));
+    auto idx = index_at(pos);
+    return {
+        .state = cells_[idx],
+        .wall = walls_[idx],
+        .weight = weights_[idx],
+        .direction = directions_[idx],
+    };
+}
+
+void Grid::restore_cell(Vec2i pos, const CellData& data) {
+    assert(is_valid(pos));
+    auto idx = index_at(pos);
+    cells_[idx] = data.state;
+    walls_[idx] = data.wall;
+    weights_[idx] = data.weight;
+    directions_[idx] = data.direction;
+
+    // If restoring a waypoint we need to make sure it's back in the list
+    if (data.state == CellState::Waypoint) {
+        bool already =
+            std::ranges::any_of(waypoints_, [&pos](const Vec2i& wp) { return wp == pos; });
+        if (!already) {
+            waypoints_.push_back(pos);
+        }
+    }
+}
+
 CellDirection Grid::direction(Vec2i pos) const {
     assert(is_valid(pos));
     return directions_[index_at(pos)];

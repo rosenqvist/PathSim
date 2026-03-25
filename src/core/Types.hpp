@@ -35,6 +35,15 @@ enum class CellDirection : uint8_t {
     West,
 };
 
+// Snapshot of a single cell's full state which is used to save or restore cells
+// when dragging start or end across the grid without destroying existing content.
+struct CellData {
+    CellState state{CellState::Empty};
+    uint8_t wall{0};
+    uint8_t weight{1};
+    CellDirection direction{CellDirection::None};
+};
+
 struct AlgoStep {
     Vec2i position{};
     CellState new_state{};

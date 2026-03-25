@@ -24,6 +24,7 @@ Try it out: [rosenqvist.github.io/PathSim](https://rosenqvist.github.io/PathSim/
 | **Stats panel** | Node count, frontier size, path cost, compute time, with copy button |
 | **Keyboard shortcuts** | Full keyboard control for tools, playback, and weight/direction brushes |
 | **Web build** | Runs in the browser via Emscripten and WebAssembly |
+| **Persistence** | Saves your current session state, so you can continue where you left off |
 | **Resizable grid** | 5×5 up to 100×100 |
 
 ## Preview

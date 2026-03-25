@@ -13,6 +13,7 @@
 #include <array>
 #include <chrono>
 #include <cstdio>
+#include <string>
 
 namespace pathsim::menu_bar {
 namespace {
@@ -192,7 +193,7 @@ void draw_diagonal_status(const Grid& grid) {
     const char* label = grid.allow_diagonals() ? "Diagonal Movement: On" : "Diagonal Movement: Off";
     float text_w = ImGui::CalcTextSize(label).x;
     float bar_w = ImGui::GetMainViewport()->Size.x;
-    ImGui::SameLine((bar_w * 0.3F) - (text_w * 0.5F));
+    ImGui::SameLine((bar_w * 0.35F) - (text_w * 0.5F));
 
     ImVec4 color =
         grid.allow_diagonals() ? ImVec4(0.3F, 0.8F, 0.4F, 0.9F) : ImVec4(0.6F, 0.6F, 0.6F, 0.5F);
@@ -375,6 +376,198 @@ void draw_tools_menu(GridRenderer& renderer) {
     ImGui::EndMenu();
 }
 
+void run_comparison(const Grid& grid, AlgoHistory& history, const AlgoFunc& algo) {
+    auto t0 = std::chrono::high_resolution_clock::now();
+    auto result = find_path_with_waypoints(grid, algo);
+    auto t1 = std::chrono::high_resolution_clock::now();
+
+    result.compute_time_ms = std::chrono::duration<float, std::milli>(t1 - t0).count();
+    history[result.algorithm_name] = algo_utils::extract_stats(result);
+}
+
+void draw_stats_comparison(const PathResult& result, const AlgoHistory& history) {
+    for (const auto& [name, stats] : history) {
+        if (name == result.algorithm_name) {
+            continue;
+        }
+
+        ImGui::Spacing();
+        ImGui::TextColored(ImVec4(0.7F, 0.7F, 0.9F, 1.0F), "%s", stats.algorithm_name.c_str());
+
+        if (stats.compute_time_ms > 0.0F) {
+            ImGui::Text("  Time: %.2f ms", static_cast<double>(stats.compute_time_ms));
+        }
+
+        ImGui::Text("  Nodes explored: %d", stats.nodes_visited);
+
+        if (stats.max_frontier_size > 0) {
+            ImGui::Text("  Peak frontier: %d", stats.max_frontier_size);
+        }
+
+        if (!result.path.empty() && stats.path_length > 0) {
+            ImGui::Text("  Path cost: %.0f", static_cast<double>(stats.path_cost));
+
+            float cost_diff = stats.path_cost - result.path_cost;
+            if (cost_diff > 0.1F) {
+                float pct = (cost_diff / result.path_cost) * 100.0F;
+                ImGui::TextColored(ImVec4(1.0F, 0.5F, 0.3F, 1.0F), "  +%.0f%% more expensive",
+                                   static_cast<double>(pct));
+            } else if (cost_diff < -0.1F) {
+                float pct = (-cost_diff / stats.path_cost) * 100.0F;
+                ImGui::TextColored(ImVec4(0.3F, 1.0F, 0.5F, 1.0F), "  %.0f%% cheaper",
+                                   static_cast<double>(pct));
+            } else {
+                ImGui::TextColored(ImVec4(0.7F, 0.7F, 0.7F, 1.0F), "  Same cost");
+            }
+        } else if (stats.path_length == 0) {
+            ImGui::TextColored(ImVec4(1.0F, 0.3F, 0.3F, 1.0F), "  No path found");
+        }
+    }
+}
+
+void draw_copy_button(const PathResult& result, const AlgoHistory& history) {
+    if (!ImGui::Button("Copy Stats")) {
+        return;
+    }
+
+    std::string stats;
+    stats += result.algorithm_name + "\n";
+    stats += "Nodes explored: " + std::to_string(result.nodes_visited) + "\n";
+    stats += "Peak frontier: " + std::to_string(result.max_frontier_size) + "\n";
+    stats +=
+        "Path length: " + std::to_string(static_cast<int>(result.path.size()) - 1) + " steps\n";
+    stats += "Path cost: " + std::to_string(result.path_cost) + "\n";
+
+    std::array<char, 32> time_buf{};
+    std::snprintf(time_buf.data(), time_buf.size(), "%.2f",
+                  static_cast<double>(result.compute_time_ms));
+    stats += "Compute time: " + std::string(time_buf.data()) + " ms\n";
+
+    for (const auto& [name, cmp] : history) {
+        if (name == result.algorithm_name) {
+            continue;
+        }
+
+        stats += "\n" + cmp.algorithm_name + "\n";
+        stats += "  Nodes explored: " + std::to_string(cmp.nodes_visited) + "\n";
+        stats += "  Peak frontier: " + std::to_string(cmp.max_frontier_size) + "\n";
+        stats += "  Path length: " + std::to_string(cmp.path_length - 1) + " steps\n";
+        stats += "  Path cost: " + std::to_string(cmp.path_cost) + "\n";
+
+        std::array<char, 32> cmp_time{};
+        std::snprintf(cmp_time.data(), cmp_time.size(), "%.2f",
+                      static_cast<double>(cmp.compute_time_ms));
+        stats += "  Compute time: " + std::string(cmp_time.data()) + " ms\n";
+
+        if (!result.path.empty() && cmp.path_length > 0) {
+            float cost_diff = cmp.path_cost - result.path_cost;
+            if (cost_diff > 0.1F) {
+                float pct = (cost_diff / result.path_cost) * 100.0F;
+                std::array<char, 32> pct_buf{};
+                std::snprintf(pct_buf.data(), pct_buf.size(), "+%.0f%%", static_cast<double>(pct));
+                stats += "  " + std::string(pct_buf.data()) + " more expensive\n";
+            } else if (cost_diff < -0.1F) {
+                float pct = (-cost_diff / cmp.path_cost) * 100.0F;
+                std::array<char, 32> pct_buf{};
+                std::snprintf(pct_buf.data(), pct_buf.size(), "%.0f%%", static_cast<double>(pct));
+                stats += "  " + std::string(pct_buf.data()) + " cheaper\n";
+            } else {
+                stats += "  Same cost\n";
+            }
+        }
+    }
+
+    ImGui::SetClipboardText(stats.c_str());
+}
+
+void draw_stats_menu(Playback& playback, Grid& grid, AlgoHistory& history) {
+    // Only show when an algorithm has been run
+    if (playback.state() == PlaybackState::Idle) {
+        return;
+    }
+
+    if (!ImGui::BeginMenu("Stats")) {
+        return;
+    }
+
+    const auto& result = playback.result();
+
+    ImGui::TextColored(ImVec4(0.4F, 0.8F, 1.0F, 1.0F), "Algorithm: %s",
+                       result.algorithm_name.c_str());
+
+    if (result.compute_time_ms > 0.0F) {
+        ImGui::Text("Compute time: %.2f ms", static_cast<double>(result.compute_time_ms));
+    }
+
+    ImGui::Text("Progress: %d / %d", playback.current_step(), playback.total_steps());
+
+    ImGui::Separator();
+
+    if (playback.state() == PlaybackState::Finished) {
+        ImGui::Text("Nodes explored: %d", result.nodes_visited);
+
+        if (result.max_frontier_size > 0) {
+            ImGui::Text("Peak frontier: %d", result.max_frontier_size);
+        }
+
+        if (result.path.empty()) {
+            ImGui::TextColored(ImVec4(1.0F, 0.3F, 0.3F, 1.0F), "No path found");
+        } else {
+            ImGui::Text("Path length: %d steps", static_cast<int>(result.path.size()) - 1);
+            ImGui::Text("Path cost: %.0f", static_cast<double>(result.path_cost));
+
+            if (result.algorithm_name == "BFS") {
+                ImGui::TextColored(ImVec4(1.0F, 0.8F, 0.3F, 1.0F),
+                                   "BFS optimizes for fewest hops, not lowest cost");
+            } else {
+                ImGui::TextColored(ImVec4(0.3F, 0.8F, 0.4F, 1.0F),
+                                   "%s optimizes for lowest total cost",
+                                   result.algorithm_name.c_str());
+            }
+        }
+
+        ImGui::Separator();
+
+        // Compare buttons for the algorithms that haven't been compared yet
+        struct AlgoEntry {
+            const char* name;
+            const char* button_label;
+            AlgoFunc func;
+        };
+
+        std::array<AlgoEntry, 3> algos{{
+            {.name = "BFS",
+             .button_label = "Compare with BFS",
+             .func = [](const Grid& g, Vec2i s, Vec2i e) { return bfs(g, s, e); }},
+            {.name = "Dijkstra",
+             .button_label = "Compare with Dijkstra",
+             .func = [](const Grid& g, Vec2i s, Vec2i e) { return dijkstra(g, s, e); }},
+            {.name = "A*",
+             .button_label = "Compare with A*",
+             .func = [](const Grid& g, Vec2i s, Vec2i e) { return a_star(g, s, e); }},
+        }};
+
+        for (const auto& algo : algos) {
+            if (result.algorithm_name == algo.name) {
+                continue;
+            }
+            if (history.contains(algo.name)) {
+                continue;
+            }
+            if (ImGui::MenuItem(algo.button_label)) {
+                run_comparison(grid, history, algo.func);
+            }
+        }
+
+        draw_stats_comparison(result, history);
+
+        ImGui::Separator();
+        draw_copy_button(result, history);
+    }
+
+    ImGui::EndMenu();
+}
+
 } // namespace
 
 void draw(Grid& grid, GridRenderer& renderer, Playback& playback, AlgoHistory& history,
@@ -397,6 +590,7 @@ void draw(Grid& grid, GridRenderer& renderer, Playback& playback, AlgoHistory& h
     draw_playback_menu(playback, grid);
     draw_maze_menu(playback, grid);
     draw_view_menu(view);
+    draw_stats_menu(playback, grid, history);
     draw_settings_menu(grid, playback, history);
     draw_diagonal_status(grid);
     draw_active_tool(renderer);

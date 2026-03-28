@@ -71,21 +71,11 @@ The three maze generation modes are designed to highlight these differences. Pur
 
 **Core/UI split.** All algorithm and grid logic lives in a static library (`pathsim_core`) that has zero dependency on ImGui or any graphics code. The UI layer links against it but never leaks into it. This means the entire core can be tested with Catch2 in a headless CI environment without needing a window or GPU. It also made the Emscripten port straightforward since only the UI layer needed platform-specific changes.
 
-**Flat vectors over 2D arrays.** The grid stores cells, walls, weights and directions in flat `std::vector`s indexed by `y * width + x`. A 2D vector-of-vectors would mean one heap allocation per row and scattered memory. Flat storage is one contiguous block which is better for cache locality when the algorithms iterate over neighbors. The tradeoff is manual index math but I centralized that in `index_at()` which also catches out-of-bounds access through debug asserts.
-
-**`uint8_t` instead of `bool` for flat vectors.** `std::vector<bool>` is a special case in C++ where it packs bits and returns proxy objects instead of real references. This breaks `std::ranges` algorithms that expect normal iterators. `std::vector<uint8_t>` just behaves like a regular vector while still being compact enough.
-
-**Separate wall bitfield.** `is_wall()` checks a dedicated `uint8_t` vector instead of comparing against `CellState::Wall`. This keeps the wall check fast during pathfinding while letting the `cells_` vector handle visual state independently. A cell can be showing as "Visited" while still being queryable as a wall without the two concerns interfering with each other.
-
-**Stack-allocated neighbors.** A cell has at most 8 neighbors. Returning a `std::vector<Vec2i>` would heap-allocate on every single neighbor lookup and that function gets called for every node the algorithm visits. `Neighbors` uses a `std::array<Vec2i, 8>` with a count and custom `begin()`/`end()` iterators so it still works in range-for loops. Zero heap allocation in the hot path.
-
 **Three maze modes.** The three generation modes exist specifically to make the algorithms behave differently. On a pure maze with walls only and uniform weight, BFS and Dijkstra find the same path so A*'s heuristic is the only differentiator. On pure terrain with weights only and no walls, BFS is the odd one out because it ignores cost entirely. Combined mode is where all three diverge which makes the comparison actually interesting.
 
 **vcpkg for desktop, FetchContent for web.** The desktop build uses vcpkg because it handles ImGui, GLFW and Catch2 reliably across platforms. The Emscripten build can't use vcpkg so it fetches ImGui with CMake's FetchContent and uses Emscripten's built-in GLFW port. This keeps the web build self-contained without maintaining a separate dependency system.
 
-**Dual-compiler CI.** The CI matrix runs both Clang and GCC. Each compiler has its own warnings and edge cases so passing both with `-Werror` catches more bugs than either one alone. clang-tidy runs only on the Clang build since it needs Clang's AST and clang-format gets its own job to keep formatting failures separate from build failures.
-
-## What I'd Do Differently
+## Notes to self: What I'd Do Differently
 
 If I started over I'd separate core logic from UI on day one instead of refactoring it in later. The Emscripten port would have been much simpler with that boundary already in place. I'd also plan for cross-platform builds earlier since adapting the main loop for Emscripten meant rewriting it entirely to work with the browser's frame callback. 
 

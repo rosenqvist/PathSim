@@ -12,10 +12,10 @@ namespace pathsim {
 // Dijkstra while still guaranteeing the optimal path.
 //
 // Does not modify the grid. Returns a full step recording for playback.
-PathResult a_star(const Grid& grid);
+[[nodiscard]] PathResult a_star(const Grid& grid);
 
 // Overload for pathfinding between arbitrary start/end points.
 // Used by the waypoint system to solve individual segments.
-PathResult a_star(const Grid& grid, Vec2i start, Vec2i end);
+[[nodiscard]] PathResult a_star(const Grid& grid, Vec2i start, Vec2i end);
 
 } // namespace pathsim

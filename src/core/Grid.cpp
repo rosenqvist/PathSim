@@ -96,7 +96,7 @@ void Grid::add_waypoint(Vec2i pos) {
     }
 
     // prevent duplicates
-    if (std::ranges::any_of(waypoints_, [&pos](const Vec2i& wp) { return wp == pos; })) {
+    if (std::ranges::find(waypoints_, pos) != waypoints_.end()) {
         return;
     }
 
@@ -146,8 +146,7 @@ void Grid::restore_cell(Vec2i pos, const CellData& data) {
 
     // If restoring a waypoint we need to make sure it's back in the list
     if (data.state == CellState::Waypoint) {
-        bool already =
-            std::ranges::any_of(waypoints_, [&pos](const Vec2i& wp) { return wp == pos; });
+        bool already = std::ranges::find(waypoints_, pos) != waypoints_.end();
         if (!already) {
             waypoints_.push_back(pos);
         }

@@ -30,6 +30,6 @@ void record_path(PathResult& result, const std::vector<Vec2i>& came_from, const 
 
 // Extracts lightweight stats from a full PathResult for the comparison panel.
 // This avoids storing the entire step recording when we only need summary numbers.
-AlgoStats extract_stats(const PathResult& result);
+[[nodiscard]] AlgoStats extract_stats(const PathResult& result);
 
 } // namespace pathsim::algo_utils

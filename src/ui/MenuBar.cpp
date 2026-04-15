@@ -154,6 +154,12 @@ void draw_settings_menu(Grid& grid, Playback& playback, AlgoHistory& history) {
 
     static int pending_width = 40;
     static int pending_height = 30;
+    static bool first_open = true;
+    if (first_open) {
+        pending_width = grid.width();
+        pending_height = grid.height();
+        first_open = false;
+    }
 
     ImGui::Spacing();
     ImGui::SetNextItemWidth(100.0F);
@@ -170,6 +176,8 @@ void draw_settings_menu(Grid& grid, Playback& playback, AlgoHistory& history) {
         playback.reset(grid);
         history.clear();
         grid.resize(pending_width, pending_height);
+        pending_width = grid.width();
+        pending_height = grid.height();
     }
 
     ImGui::EndMenu();
@@ -469,7 +477,7 @@ void draw_copy_button(const PathResult& result, const AlgoHistory& history) {
         stats += "\n" + cmp.algorithm_name + "\n";
         stats += "  Nodes explored: " + std::to_string(cmp.nodes_visited) + "\n";
         stats += "  Peak frontier: " + std::to_string(cmp.max_frontier_size) + "\n";
-        stats += "  Path length: " + std::to_string(cmp.path_length - 1) + " steps\n";
+        stats += "  Path length: " + std::to_string(std::max(0, cmp.path_length - 1)) + " steps\n";
         stats += "  Path cost: " + std::to_string(cmp.path_cost) + "\n";
 
         std::array<char, 32> cmp_time{};

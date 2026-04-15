@@ -13,8 +13,7 @@ std::string serialize(const Grid& grid, const ViewSettings& view);
 // Restore state from a stored string. Returns false if data is invalid.
 bool deserialize(const std::string& data, Grid& grid, ViewSettings& view);
 
-// Platform storage are the following: localStorage on web and .dat file for desktop
-// todo: Add tabs? Send/share current grid content with others? Add json support?
+// Platform storage: localStorage on web, .dat file for desktop
 void save_to_storage(const std::string& data);
 std::string load_from_storage();
 

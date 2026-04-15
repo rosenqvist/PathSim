@@ -921,7 +921,7 @@ ImU32 GridRenderer::heatmap_color(float t) {
 
     if (t < 0.5F) {
         float s = t * 2.0F;
-        r = 20.0F + (s * 0.0F);
+        r = 20.0F;
         g = 20.0F + (s * 160.0F);
         b = 80.0F + (s * 140.0F);
     } else {

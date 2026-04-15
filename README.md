@@ -100,7 +100,7 @@ cmake --build build/release
 ./build/release/PathSim
 ```
 
-### Tests are built with: [Catch2](https://github.com/catchorg/Catch2)
+### Tests
 ```bash
 cmake --preset debug
 cmake --build build/debug

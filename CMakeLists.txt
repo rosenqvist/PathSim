@@ -56,7 +56,7 @@ if(EMSCRIPTEN)
         src/ui/Persistence.cpp
         src/ui/GridRenderer.cpp
         src/ui/MenuBar.cpp
-        src/ui/StatsPanel.cpp
+
         src/ui/KeyboardShortcuts.cpp
     )
     target_compile_options(PathSim PRIVATE -Wall -Wextra -Wpedantic -Werror --use-port=contrib.glfw3)
@@ -87,7 +87,6 @@ else()
         src/ui/Persistence.cpp
         src/ui/GridRenderer.cpp
         src/ui/MenuBar.cpp
-        src/ui/StatsPanel.cpp
         src/ui/KeyboardShortcuts.cpp
     )
     target_compile_options(PathSim PRIVATE
@@ -124,6 +123,8 @@ else()
         tests/multipath_tests.cpp
         tests/diagonal_tests.cpp
         tests/oneway_tests.cpp
+        tests/persistence_tests.cpp
+        src/ui/Persistence.cpp
     )
     target_compile_options(pathsim_tests PRIVATE
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra>

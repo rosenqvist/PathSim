@@ -4,7 +4,6 @@
 #include "ui/KeyboardShortcuts.hpp"
 #include "ui/MenuBar.hpp"
 #include "ui/Persistence.hpp"
-#include "ui/StatsPanel.hpp"
 #include "ui/ViewSettings.hpp"
 
 #include <GLFW/glfw3.h>
@@ -57,7 +56,6 @@ void main_loop(void* arg) {
     app->renderer.handle_input(app->grid, can_edit);
 
     pathsim::menu_bar::draw(app->grid, app->renderer, app->playback, app->history, app->view);
-    pathsim::stats_panel::draw(app->playback, app->grid, app->history);
 
     pathsim::keyboard_shortcuts::handle(app->grid, app->renderer, app->playback);
 

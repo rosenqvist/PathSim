@@ -11,10 +11,10 @@ namespace pathsim {
 // directions since it has no heuristic guiding it toward the goal.
 //
 // Does not modify the grid. Returns a full step recording for playback.
-PathResult dijkstra(const Grid& grid);
+[[nodiscard]] PathResult dijkstra(const Grid& grid);
 
 // Overload for pathfinding between arbitrary start/end points.
 // Used by the waypoint system to solve individual segments.
-PathResult dijkstra(const Grid& grid, Vec2i start, Vec2i end);
+[[nodiscard]] PathResult dijkstra(const Grid& grid, Vec2i start, Vec2i end);
 
 } // namespace pathsim

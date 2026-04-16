@@ -53,7 +53,7 @@ void draw_algorithm_menu(Playback& playback, Grid& grid, AlgoHistory& history) {
 
     ImGui::Separator();
 
-    if (ImGui::MenuItem("Run All", nullptr, false, can_run)) {
+    if (ImGui::MenuItem("Run All", "A", false, can_run)) {
         auto run_and_record = [&](const AlgoFunc& algo) {
             auto t0 = std::chrono::high_resolution_clock::now();
             auto result = find_path_with_waypoints(grid, algo);
@@ -202,6 +202,11 @@ void draw_view_menu(ViewSettings& view) {
     }
 
     ImGui::Checkbox("Show Cell Tooltips", &view.show_tooltips);
+
+    ImGui::Separator();
+    if (ImGui::MenuItem("Shortcuts", "H", view.show_help)) {
+        view.show_help = !view.show_help;
+    }
 
     ImGui::EndMenu();
 }
@@ -630,12 +635,33 @@ void draw(Grid& grid, GridRenderer& renderer, Playback& playback, AlgoHistory& h
 
     ImGui::EndMainMenuBar();
 
+    // A key shortcut for Run All
+    if (!ImGui::GetIO().WantCaptureKeyboard && ImGui::IsKeyPressed(ImGuiKey_A)) {
+        auto state = playback.state();
+        if (state == PlaybackState::Idle || state == PlaybackState::Finished) {
+            auto run_and_record = [&](const AlgoFunc& algo) {
+                auto t0 = std::chrono::high_resolution_clock::now();
+                auto result = find_path_with_waypoints(grid, algo);
+                auto t1 = std::chrono::high_resolution_clock::now();
+                result.compute_time_ms = std::chrono::duration<float, std::milli>(t1 - t0).count();
+                history[result.algorithm_name] = algo_utils::extract_stats(result);
+                return result;
+            };
+
+            run_and_record([](const Grid& g, Vec2i s, Vec2i e) { return bfs(g, s, e); });
+            run_and_record([](const Grid& g, Vec2i s, Vec2i e) { return dijkstra(g, s, e); });
+            auto result =
+                run_and_record([](const Grid& g, Vec2i s, Vec2i e) { return a_star(g, s, e); });
+            playback.start(std::move(result), grid);
+        }
+    }
+
     // Help overlay
     if (view.show_help) {
         ImGuiViewport* vp = ImGui::GetMainViewport();
         ImVec2 center(vp->WorkPos.x + vp->WorkSize.x * 0.5F, vp->WorkPos.y + vp->WorkSize.y * 0.5F);
-        ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5F, 0.5F));
-        ImGui::SetNextWindowSize(ImVec2(360.0F, 0.0F));
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5F, 0.5F));
+        ImGui::SetNextWindowSize(ImVec2(360.0F, 0.0F), ImGuiCond_Appearing);
 
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.08F, 0.08F, 0.10F, 0.94F));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0F);
@@ -643,7 +669,7 @@ void draw(Grid& grid, GridRenderer& renderer, Playback& playback, AlgoHistory& h
 
         if (ImGui::Begin("##help", &view.show_help,
                          ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize |
+                             ImGuiWindowFlags_AlwaysAutoResize |
                              ImGuiWindowFlags_NoSavedSettings)) {
             ImGui::TextColored(ImVec4(0.4F, 0.8F, 1.0F, 1.0F), "Keyboard Shortcuts");
             ImGui::Spacing();
@@ -665,6 +691,7 @@ void draw(Grid& grid, GridRenderer& renderer, Playback& playback, AlgoHistory& h
             ImGui::Spacing();
 
             ImGui::TextColored(ImVec4(0.7F, 0.7F, 0.9F, 1.0F), "Playback");
+            row("A", "Run All");
             row("Space", "Pause / Resume");
             row(".", "Step Forward");
             row("R", "Reset");

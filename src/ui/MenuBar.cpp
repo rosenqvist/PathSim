@@ -608,6 +608,11 @@ void draw(Grid& grid, GridRenderer& renderer, Playback& playback, AlgoHistory& h
             grid.clear();
             history.clear();
         }
+        if (ImGui::MenuItem("Clear Path", nullptr, false,
+                            playback.state() != PlaybackState::Idle)) {
+            playback.reset(grid);
+            history.clear();
+        }
         ImGui::EndMenu();
     }
 
@@ -624,5 +629,67 @@ void draw(Grid& grid, GridRenderer& renderer, Playback& playback, AlgoHistory& h
     draw_hover_info(grid, renderer);
 
     ImGui::EndMainMenuBar();
+
+    // Help overlay
+    if (view.show_help) {
+        ImGuiViewport* vp = ImGui::GetMainViewport();
+        ImVec2 center(vp->WorkPos.x + vp->WorkSize.x * 0.5F, vp->WorkPos.y + vp->WorkSize.y * 0.5F);
+        ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5F, 0.5F));
+        ImGui::SetNextWindowSize(ImVec2(360.0F, 0.0F));
+
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.08F, 0.08F, 0.10F, 0.94F));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0F);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20.0F, 16.0F));
+
+        if (ImGui::Begin("##help", &view.show_help,
+                         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize |
+                             ImGuiWindowFlags_NoSavedSettings)) {
+            ImGui::TextColored(ImVec4(0.4F, 0.8F, 1.0F, 1.0F), "Keyboard Shortcuts");
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            auto row = [](const char* key, const char* desc) {
+                ImGui::TextColored(ImVec4(1.0F, 0.8F, 0.3F, 1.0F), "%-12s", key);
+                ImGui::SameLine(120.0F);
+                ImGui::Text("%s", desc);
+            };
+
+            ImGui::TextColored(ImVec4(0.7F, 0.7F, 0.9F, 1.0F), "Tools");
+            row("1", "Wall");
+            row("2", "Erase");
+            row("3", "Weight Brush");
+            row("4", "Waypoint");
+            row("5", "Impassable");
+            ImGui::Spacing();
+
+            ImGui::TextColored(ImVec4(0.7F, 0.7F, 0.9F, 1.0F), "Playback");
+            row("Space", "Pause / Resume");
+            row(".", "Step Forward");
+            row("R", "Reset");
+            ImGui::Spacing();
+
+            ImGui::TextColored(ImVec4(0.7F, 0.7F, 0.9F, 1.0F), "Brushes");
+            row("Left/Right", "Adjust weight (1-9)");
+            row("Arrows", "Set one-way direction");
+            row("Scroll", "Adjust weight");
+            ImGui::Spacing();
+
+            ImGui::TextColored(ImVec4(0.7F, 0.7F, 0.9F, 1.0F), "Mouse");
+            row("Left Click", "Place with active tool");
+            row("Right Click", "Erase any cell");
+            row("Drag", "Move start / end");
+            row("Middle Click", "Renumber waypoint");
+            ImGui::Spacing();
+
+            ImGui::Separator();
+            ImGui::Spacing();
+            ImGui::TextColored(ImVec4(0.5F, 0.5F, 0.5F, 1.0F), "Press H to close");
+        }
+        ImGui::End();
+        ImGui::PopStyleVar(2);
+        ImGui::PopStyleColor();
+    }
 }
 } // namespace pathsim::menu_bar

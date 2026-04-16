@@ -84,7 +84,12 @@ void handle_weight_scroll(GridRenderer& renderer) {
 
 } // namespace
 
-void handle(Grid& grid, GridRenderer& renderer, Playback& playback) {
+void handle(Grid& grid, GridRenderer& renderer, Playback& playback, ViewSettings& view) {
+    // H key toggles help even when menus capture keyboard
+    if (ImGui::IsKeyPressed(ImGuiKey_H) && !ImGui::GetIO().WantTextInput) {
+        view.show_help = !view.show_help;
+    }
+
     if (ImGui::GetIO().WantCaptureKeyboard) {
         return;
     }

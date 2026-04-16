@@ -84,8 +84,8 @@ If I started over I'd separate core logic from UI on day one instead of refactor
 ### Prerequisites
 
 - C++20 compiler (Clang, GCC, or MSVC)
-- CMake 3.25+
-- Ninja
+- [CMake](https://cmake.org/) 3.25+
+- [Ninja](https://ninja-build.org/)
 - [vcpkg](https://github.com/microsoft/vcpkg) with `VCPKG_ROOT` environment variable set
 
 vcpkg handles all dependencies (Dear ImGui, GLFW, Catch2) automatically.
@@ -101,6 +101,9 @@ cmake --build build/release
 ```
 
 ### Tests
+
+Built with [Catch2](https://github.com/catchorg/Catch2).
+
 ```bash
 cmake --preset debug
 cmake --build build/debug

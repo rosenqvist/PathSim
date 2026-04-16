@@ -57,7 +57,7 @@ void main_loop(void* arg) {
 
     pathsim::menu_bar::draw(app->grid, app->renderer, app->playback, app->history, app->view);
 
-    pathsim::keyboard_shortcuts::handle(app->grid, app->renderer, app->playback);
+    pathsim::keyboard_shortcuts::handle(app->grid, app->renderer, app->playback, app->view);
 
     // Auto-save every 2 seconds
     app->save_timer += ImGui::GetIO().DeltaTime;

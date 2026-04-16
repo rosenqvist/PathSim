@@ -15,14 +15,14 @@ Try it out: [rosenqvist.github.io/PathSim](https://rosenqvist.github.io/PathSim/
 
 | Feature | Description |
 |---------|-------------|
-| **Three algorithms** | BFS, Dijkstra's, and A* with Run All to compare side by side |
+| **Three algorithms** | BFS, Dijkstra's, and A* with Run All (`A`) to compare side by side |
 | **Grid tools** | Walls, weighted cells (1–9), impassable cells, one-way cells, waypoints |
 | **Diagonal movement** | 8-directional movement with corner-cutting prevention |
 | **Maze generation** | Maze, Terrain, and Maze + Terrain modes that highlight algorithm differences |
 | **Playback controls** | Step-by-step, pause, resume, adjustable speed |
 | **Heatmap overlay** | Visualize exploration order from early (dark blue) to late (bright cyan) |
-| **Stats panel** | Node count, frontier size, path cost, compute time, with copy button |
-| **Keyboard shortcuts** | Full keyboard control for tools, playback, and weight/direction brushes |
+| **Algorithm stats** | Node count, frontier size, path cost, compute time, with copy button |
+| **Keyboard shortcuts** | Full keyboard control for tools, playback, and brushes. Press `H` for a cheat sheet |
 | **Web build** | Runs in the browser via Emscripten and WebAssembly |
 | **Persistence** | Saves your current session state, so you can continue where you left off |
 | **Resizable grid** | 5×5 up to 100×100 |

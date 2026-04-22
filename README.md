@@ -15,7 +15,7 @@ Try it out: [rosenqvist.github.io/PathSim](https://rosenqvist.github.io/PathSim/
 
 | Feature | Description |
 |---------|-------------|
-| **Three algorithms** | BFS, Dijkstra's, and A* with Run All (`A`) to compare side by side |
+| **Three algorithms** | BFS, Dijkstra's, and A* with a Run All option to compare side by side |
 | **Grid tools** | Walls, weighted cells (1–9), impassable cells, one-way cells, waypoints |
 | **Diagonal movement** | 8-directional movement with corner-cutting prevention |
 | **Maze generation** | Maze, Terrain, and Maze + Terrain modes that highlight algorithm differences |

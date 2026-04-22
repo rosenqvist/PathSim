@@ -85,8 +85,6 @@ jobs:
   build-web:
     runs-on: ubuntu-latest
     name: emscripten
-    permissions:
-    contents: write
 
     steps:
       - uses: actions/checkout@v4
